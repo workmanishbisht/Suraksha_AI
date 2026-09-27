@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
     Home,
@@ -24,6 +25,8 @@ import {
 
 import { useAuth } from "../../context/AuthContext";
 
+const API_BASE_URL = "http://localhost:5000/api";
+
 const menuByRole = {
     admin: [
         {
@@ -38,7 +41,7 @@ const menuByRole = {
                     label: "Incidents",
                     icon: TriangleAlert,
                     path: "/admin/incidents",
-                    badge: "42",
+                    dynamicBadge: "incidentCount",
                 },
                 {
                     label: "Reports",
@@ -296,8 +299,53 @@ const menuByRole = {
 
 function Sidebar() {
     const { user } = useAuth();
+    const [incidentCount, setIncidentCount] = useState(0);
 
     const role = user?.role || "citizen";
+    const isAdmin = role === "admin";
+
+    useEffect(() => {
+        if (!isAdmin) return;
+
+        let cancelled = false;
+
+        const fetchIncidentCount = async () => {
+            try {
+                const response = await fetch(
+                    `${API_BASE_URL}/analytics`,
+                    {
+                        method: "GET",
+                        credentials: "include",
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch incident count.");
+                }
+
+                const data = await response.json();
+
+                if (!cancelled) {
+                    setIncidentCount(
+                        Number(data?.totalIncidents ?? 0)
+                    );
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setIncidentCount(0);
+                }
+            }
+        };
+
+        fetchIncidentCount();
+
+        const interval = setInterval(fetchIncidentCount, 60000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [isAdmin]);
     const menuGroups = menuByRole[role] || menuByRole.citizen;
 
     return (
@@ -421,11 +469,10 @@ function Sidebar() {
                                                 transition-all
                                                 duration-200
 
-                                                ${
-                                                    isActive
-                                                        ? "bg-cyan-400/[0.09] text-cyan-300"
-                                                        : "text-slate-400 hover:bg-white/[0.035] hover:text-slate-100"
-                                                }
+                                                ${isActive
+                                                ? "bg-cyan-400/[0.09] text-cyan-300"
+                                                : "text-slate-400 hover:bg-white/[0.035] hover:text-slate-100"
+                                            }
                                             `
                                         }
                                     >
@@ -457,10 +504,9 @@ function Sidebar() {
                                                         rounded-[5px]
                                                         transition-all
 
-                                                        ${
-                                                            isActive
-                                                                ? "bg-cyan-400/10"
-                                                                : "group-hover:bg-white/[0.035]"
+                                                        ${isActive
+                                                            ? "bg-cyan-400/10"
+                                                            : "group-hover:bg-white/[0.035]"
                                                         }
                                                     `}
                                                 >
@@ -481,9 +527,11 @@ function Sidebar() {
                                                 </span>
 
                                                 {/* Badge */}
-                                                {item.badge && (
-                                                    <span
-                                                        className="
+                                                {(item.badge ||
+                                                    item.dynamicBadge ===
+                                                    "incidentCount") && (
+                                                        <span
+                                                            className="
                                                             min-w-[25px]
                                                             rounded-full
                                                             bg-red-500/10
@@ -494,13 +542,16 @@ function Sidebar() {
                                                             font-medium
                                                             text-red-400
                                                         "
-                                                    >
-                                                        {item.badge}
-                                                    </span>
-                                                )}
+                                                        >
+                                                            {item.dynamicBadge ===
+                                                                "incidentCount"
+                                                                ? incidentCount
+                                                                : item.badge}
+                                                        </span>
+                                                    )}
 
                                                 {/* Active Arrow */}
-                                                {isActive && !item.badge && (
+                                                {isActive && !item.badge && !item.dynamicBadge && (
                                                     <ChevronRight
                                                         size={14}
                                                         strokeWidth={1.8}

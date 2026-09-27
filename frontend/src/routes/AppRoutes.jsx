@@ -7,6 +7,9 @@ import ResetPassword from "../pages/auth/ResetPassword";
 
 import Dashboard from "../pages/admin/Dashboard";
 import Incidents from "../pages/admin/Incidents";
+import Reports from "../pages/admin/Reports";
+import FieldOfficers from "../pages/admin/FieldOfficers";
+import EmergencyResources from "../pages/admin/EmergencyResources";
 import Profile from "../pages/admin/Profile";
 
 import CitizenDashboard from "../pages/citizen/Dashboard";
@@ -28,7 +31,10 @@ function AppRoutes() {
                             AUTH ROUTES
                     ========================================== */}
 
-                <Route path="/" element={<Login />} />
+                <Route
+                    path="/"
+                    element={<Login />}
+                />
 
                 <Route
                     path="/login"
@@ -72,6 +78,21 @@ function AppRoutes() {
                         <Route
                             path="/admin/incidents"
                             element={<Incidents />}
+                        />
+
+                        <Route
+                            path="/admin/reports"
+                            element={<Reports />}
+                        />
+
+                        <Route
+                            path="/admin/field-officers"
+                            element={<FieldOfficers />}
+                        />
+
+                        <Route
+                            path="/admin/resources"
+                            element={<EmergencyResources />}
                         />
 
                         <Route

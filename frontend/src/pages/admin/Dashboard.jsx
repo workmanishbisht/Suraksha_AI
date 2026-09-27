@@ -16,7 +16,6 @@ import {
     Building2,
     Cross,
     MapPin,
-    CloudSun,
     Activity,
     Clock3,
     ShieldCheck,
@@ -47,80 +46,82 @@ import {
 } from "recharts";
 
 /* =========================================
-   MAP DATA
+   MAP HELPERS
 ========================================= */
 
-const incidentLocations = [
-    {
-        id: 1,
-        longitude: 78.0322,
-        latitude: 30.3165,
-        count: 12,
-        label: "Uttarakhand",
-        location: "Dehradun / Tehri Region",
-        level: "Critical",
-        color: "#ef4444",
-    },
-    {
-        id: 2,
-        longitude: 77.1025,
-        latitude: 28.7041,
-        count: 3,
-        label: "Delhi",
-        location: "New Delhi",
-        level: "Resolved",
-        color: "#3b82f6",
-    },
-    {
-        id: 3,
-        longitude: 78.9629,
-        latitude: 26.8467,
-        count: 4,
-        label: "Uttar Pradesh",
-        location: "Northern UP",
-        level: "Medium",
-        color: "#f59e0b",
-    },
-    {
-        id: 4,
-        longitude: 73.8567,
-        latitude: 18.5204,
-        count: 2,
-        label: "Maharashtra",
-        location: "Pune Region",
-        level: "Low",
-        color: "#10b981",
-    },
-    {
-        id: 5,
-        longitude: 85.8245,
-        latitude: 20.9517,
-        count: 7,
-        label: "Odisha",
-        location: "Coastal Odisha",
-        level: "Critical",
-        color: "#ef4444",
-    },
-    {
-        id: 6,
-        longitude: 77.1734,
-        latitude: 31.1048,
-        count: 5,
-        label: "Himachal Pradesh",
-        location: "Shimla Region",
-        level: "High",
-        color: "#f97316",
-    },
-    {
-        id: 7,
-        longitude: 78.6569,
-        latitude: 11.1271,
-        count: 3,
-        label: "Tamil Nadu",
-        location: "Northern Tamil Nadu",
-        level: "Resolved",
-        color: "#3b82f6",
-    },
+const getIncidentMapColor = (severity, status) => {
+    if (status === "resolved") return "#3b82f6";
+
+    const colors = {
+        critical: "#ef4444",
+        high: "#f97316",
+        medium: "#f59e0b",
+        low: "#10b981",
+    };
+
+    return colors[severity] || "#06b6d4";
+};
+
+const formatLabel = (value = "") =>
+    String(value)
+        .replace(/_/g, " ")
+        .replace(/\\b\\w/g, (char) => char.toUpperCase());
+
+const formatNumber = (value) =>
+    new Intl.NumberFormat("en-IN").format(value || 0);
+
+const formatRelativeTime = (date) => {
+    if (!date) return "--";
+
+    const diff = Math.max(0, Date.now() - new Date(date).getTime());
+    const minutes = Math.floor(diff / 60000);
+
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes} min ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
+
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+};
+
+const getSeverityIconClass = (severity) => {
+    const classes = {
+        critical: "text-red-400",
+        high: "text-orange-400",
+        medium: "text-amber-400",
+        low: "text-cyan-400",
+    };
+
+    return classes[severity] || "text-cyan-400";
+};
+
+const getBreakdownCount = (items = [], key) =>
+    items.find((item) => item?._id === key)?.count || 0;
+
+const buildTrendData = (items = []) =>
+    items.map((item) => ({
+        day: new Intl.DateTimeFormat("en-IN", {
+            day: "2-digit",
+            month: "short",
+        }).format(new Date(`${item._id}T00:00:00`)),
+        total: item.count || 0,
+    }));
+
+const buildCategoryData = (items = []) =>
+    items.map((item) => ({
+        name: formatLabel(item._id),
+        value: item.count || 0,
+    }));
+
+const categoryColors = [
+    "#22a7e8",
+    "#06b6d4",
+    "#f59e0b",
+    "#fbbf24",
+    "#14b8a6",
+    "#64748b",
 ];
 
 /* =========================================
@@ -164,57 +165,6 @@ const incidents = [
    RESOURCE DATA
 ========================================= */
 
-const resources = [
-    {
-        name: "Rescue Teams",
-        value: 24,
-        icon: UserRound,
-    },
-    {
-        name: "Ambulances",
-        value: 58,
-        icon: Ambulance,
-    },
-    {
-        name: "Helicopters",
-        value: 12,
-        icon: Plane,
-    },
-    {
-        name: "Relief Camps",
-        value: 86,
-        icon: Building2,
-    },
-    {
-        name: "Medical Units",
-        value: 44,
-        icon: Cross,
-    },
-];
-
-/* =========================================
-   CHART DATA
-========================================= */
-
-const trendData = [
-    { day: "12 Sep", total: 36, critical: 7, high: 11 },
-    { day: "13 Sep", total: 42, critical: 8, high: 13 },
-    { day: "14 Sep", total: 55, critical: 12, high: 17 },
-    { day: "15 Sep", total: 44, critical: 9, high: 14 },
-    { day: "16 Sep", total: 61, critical: 14, high: 19 },
-    { day: "17 Sep", total: 63, critical: 15, high: 21 },
-    { day: "18 Sep", total: 48, critical: 10, high: 16 },
-];
-
-const categoryData = [
-    { name: "Flood", value: 12 },
-    { name: "Landslide", value: 10 },
-    { name: "Forest Fire", value: 8 },
-    { name: "Earthquake", value: 6 },
-    { name: "Heavy Rain", value: 4 },
-    { name: "Others", value: 2 },
-];
-
 const populationData = [
     { day: "12 Sep", population: 150 },
     { day: "13 Sep", population: 200 },
@@ -225,15 +175,6 @@ const populationData = [
     { day: "18 Sep", population: 250 },
 ];
 
-const categoryColors = [
-    "#22a7e8",
-    "#06b6d4",
-    "#f59e0b",
-    "#fbbf24",
-    "#14b8a6",
-    "#64748b",
-];
-
 /* =========================================
    DASHBOARD
 ========================================= */
@@ -242,18 +183,28 @@ function Dashboard() {
     const [selectedIncident, setSelectedIncident] =
         useState(null);
 
-    const [dashboardLocation, setDashboardLocation] =
-        useState(null);
-
-    const [dashboardWeather, setDashboardWeather] =
-        useState({
-            temperature: null,
-            condition: "Loading...",
-            isDay: true,
-        });
 
     const [currentDateTime, setCurrentDateTime] =
         useState(new Date());
+
+    const [analytics, setAnalytics] = useState(null);
+    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [analyticsError, setAnalyticsError] = useState("");
+
+    const [fieldOfficerStats, setFieldOfficerStats] = useState({
+        totalOfficers: 0,
+        activeOfficers: 0,
+        inactiveOfficers: 0,
+    });
+    const [fieldOfficerLoading, setFieldOfficerLoading] = useState(true);
+
+    const [emergencyResources, setEmergencyResources] = useState([]);
+    const [resourceLoading, setResourceLoading] = useState(true);
+    const [resourceError, setResourceError] = useState("");
+
+    const [mapIncidents, setMapIncidents] = useState([]);
+    const [mapLoading, setMapLoading] = useState(true);
+    const [mapError, setMapError] = useState("");
 
     /* =========================================
        LIVE DATE & TIME
@@ -275,14 +226,16 @@ function Dashboard() {
     }, []);
 
     /* =========================================
-       LOCATION + WEATHER
+       ANALYTICS
     ========================================= */
 
     useEffect(() => {
-        const fetchDashboardWeather = async () => {
+        const fetchAnalytics = async () => {
             try {
+                setAnalyticsLoading(true);
+
                 const response = await fetch(
-                    "http://localhost:5000/api/weather",
+                    "http://localhost:5000/api/analytics",
                     {
                         method: "GET",
                         credentials: "include",
@@ -295,45 +248,235 @@ function Dashboard() {
                 if (!response.ok) {
                     throw new Error(
                         data?.message ||
-                            "Unable to fetch weather"
+                        "Unable to fetch analytics"
                     );
                 }
 
-                setDashboardLocation(
-                    data?.location || null
-                );
-
-                setDashboardWeather({
-                    temperature:
-                        data?.weather?.temperature ??
-                        null,
-
-                    condition:
-                        data?.weather?.condition ||
-                        "Unavailable",
-
-                    isDay:
-                        data?.weather?.isDay ?? true,
-                });
+                setAnalytics(data?.analytics || null);
+                setAnalyticsError("");
             } catch (error) {
                 console.error(
-                    "Dashboard Weather Error:",
+                    "Dashboard Analytics Error:",
                     error
                 );
-
-                setDashboardWeather({
-                    temperature: null,
-                    condition: "Unavailable",
-                    isDay: true,
-                });
+                setAnalyticsError(
+                    error?.message ||
+                    "Unable to fetch analytics"
+                );
+            } finally {
+                setAnalyticsLoading(false);
             }
         };
 
-        fetchDashboardWeather();
+        fetchAnalytics();
 
         const interval = setInterval(
-            fetchDashboardWeather,
-            10 * 60 * 1000
+            fetchAnalytics,
+            5 * 60 * 1000
+        );
+
+        return () => clearInterval(interval);
+    }, []);
+
+    /* =========================================
+       FIELD OFFICERS
+    ========================================= */
+
+    useEffect(() => {
+        const fetchFieldOfficerStats = async () => {
+            try {
+                setFieldOfficerLoading(true);
+
+                const response = await fetch(
+                    "http://localhost:5000/api/field-officers/stats",
+                    {
+                        method: "GET",
+                        credentials: "include",
+                        cache: "no-store",
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.message ||
+                        "Unable to fetch field officer stats"
+                    );
+                }
+
+                setFieldOfficerStats(
+                    data?.stats || {
+                        totalOfficers: 0,
+                        activeOfficers: 0,
+                        inactiveOfficers: 0,
+                    }
+                );
+            } catch (error) {
+                console.error(
+                    "Dashboard Field Officer Stats Error:",
+                    error
+                );
+
+                setFieldOfficerStats({
+                    totalOfficers: 0,
+                    activeOfficers: 0,
+                    inactiveOfficers: 0,
+                });
+            } finally {
+                setFieldOfficerLoading(false);
+            }
+        };
+
+        fetchFieldOfficerStats();
+
+        const interval = setInterval(
+            fetchFieldOfficerStats,
+            60 * 1000
+        );
+
+        return () => clearInterval(interval);
+    }, []);
+
+    /* =========================================
+       EMERGENCY RESOURCES
+    ========================================= */
+
+    useEffect(() => {
+        const fetchEmergencyResources = async () => {
+            try {
+                setResourceLoading(true);
+
+                const response = await fetch(
+                    "http://localhost:5000/api/emergency-resources",
+                    {
+                        method: "GET",
+                        credentials: "include",
+                        cache: "no-store",
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.message ||
+                        "Unable to fetch emergency resources"
+                    );
+                }
+
+                setEmergencyResources(data?.resources || []);
+                setResourceError("");
+            } catch (error) {
+                console.error(
+                    "Dashboard Emergency Resources Error:",
+                    error
+                );
+
+                setResourceError(
+                    error?.message ||
+                    "Unable to fetch emergency resources"
+                );
+                setEmergencyResources([]);
+            } finally {
+                setResourceLoading(false);
+            }
+        };
+
+        fetchEmergencyResources();
+
+        const interval = setInterval(
+            fetchEmergencyResources,
+            60 * 1000
+        );
+
+        return () => clearInterval(interval);
+    }, []);
+
+    /* =========================================
+       LIVE INCIDENT MAP
+    ========================================= */
+
+    useEffect(() => {
+        const fetchMapIncidents = async () => {
+            try {
+                setMapLoading(true);
+
+                const response = await fetch(
+                    "http://localhost:5000/api/incidents",
+                    {
+                        method: "GET",
+                        credentials: "include",
+                        cache: "no-store",
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data?.message ||
+                        "Unable to fetch incidents"
+                    );
+                }
+
+                const incidentsWithCoordinates = (
+                    data?.incidents || []
+                )
+                    .filter(
+                        (incident) =>
+                            typeof incident?.location?.latitude ===
+                            "number" &&
+                            typeof incident?.location?.longitude ===
+                            "number"
+                    )
+                    .map((incident) => ({
+                        ...incident,
+                        longitude: incident.location.longitude,
+                        latitude: incident.location.latitude,
+                        label:
+                            incident.title ||
+                            formatLabel(incident.type),
+                        location: [
+                            incident.location?.address,
+                            incident.location?.city,
+                            incident.location?.state,
+                        ]
+                            .filter(Boolean)
+                            .join(", ") ||
+                            "Location unavailable",
+                        level: formatLabel(
+                            incident.severity || "medium"
+                        ),
+                        color: getIncidentMapColor(
+                            incident.severity,
+                            incident.status
+                        ),
+                        count: 1,
+                    }));
+
+                setMapIncidents(incidentsWithCoordinates);
+                setMapError("");
+            } catch (error) {
+                console.error(
+                    "Dashboard Map Incidents Error:",
+                    error
+                );
+
+                setMapError(
+                    error?.message ||
+                    "Unable to fetch map incidents"
+                );
+            } finally {
+                setMapLoading(false);
+            }
+        };
+
+        fetchMapIncidents();
+
+        const interval = setInterval(
+            fetchMapIncidents,
+            60 * 1000
         );
 
         return () => clearInterval(interval);
@@ -365,8 +508,8 @@ function Dashboard() {
         currentHour < 12
             ? "Good Morning"
             : currentHour < 17
-              ? "Good Afternoon"
-              : "Good Evening";
+                ? "Good Afternoon"
+                : "Good Evening";
 
     return (
         <div className="space-y-5">
@@ -409,47 +552,7 @@ function Dashboard() {
                         </p>
                     </div>
 
-                    <div className="h-9 w-px bg-[#173149]" />
 
-                    {/* LOCATION & WEATHER */}
-
-                    <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-[#21415c] bg-[#0b2032]">
-                            <MapPin
-                                size={17}
-                                className="text-cyan-400"
-                            />
-                        </div>
-
-                        <div>
-                            <p className="flex items-center gap-1.5 text-xs font-medium text-slate-200">
-                                {dashboardLocation?.name ||
-                                    "Loading..."}
-
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                            </p>
-
-                            <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-500">
-                                <CloudSun
-                                    size={12}
-                                    className="text-amber-400"
-                                />
-
-                                {dashboardWeather.temperature !==
-                                null
-                                    ? `${Math.round(
-                                          dashboardWeather.temperature
-                                      )}°C`
-                                    : "--"}
-
-                                <span>•</span>
-
-                                {
-                                    dashboardWeather.condition
-                                }
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </section>
 
@@ -459,41 +562,53 @@ function Dashboard() {
                 <StatCard
                     icon={TriangleAlert}
                     iconClass="border-red-500/10 bg-red-500/10 text-red-400"
-                    value="42"
+                    value={analyticsLoading ? "--" : analytics?.overview?.activeIncidents ?? 0}
                     title="Active Incidents"
-                    trend="↑ 12%"
+                    trend="Live"
                     trendClass="text-red-400"
-                    footer="8 Critical • 14 High • 20 Others"
+                    footer={`${analytics?.overview?.criticalIncidents ?? 0} Critical • ${getBreakdownCount(analytics?.severityBreakdown, "high")} High • ${getBreakdownCount(analytics?.severityBreakdown, "medium") + getBreakdownCount(analytics?.severityBreakdown, "low")} Others`}
                 />
 
                 <StatCard
                     icon={Users}
                     iconClass="border-cyan-500/10 bg-cyan-500/10 text-cyan-400"
-                    value="1,248"
+                    value={analyticsLoading ? "--" : formatNumber(analytics?.overview?.peopleAffected ?? 0)}
                     title="People Affected"
-                    trend="↑ 8%"
+                    trend="Live"
                     trendClass="text-emerald-400"
-                    footer="Across 6 States"
+                    footer="From reported incidents"
                 />
 
                 <StatCard
                     icon={CheckCircle2}
                     iconClass="border-blue-500/10 bg-blue-500/10 text-blue-400"
-                    value="318"
+                    value={analyticsLoading ? "--" : analytics?.overview?.resolvedIncidents ?? 0}
                     title="Resolved Incidents"
-                    trend="↑ 18%"
+                    trend="Live"
                     trendClass="text-emerald-400"
-                    footer="This Month"
+                    footer={`Total ${analytics?.overview?.totalIncidents ?? 0} incidents`}
                 />
 
                 <StatCard
                     icon={UserRound}
                     iconClass="border-indigo-500/10 bg-indigo-500/10 text-indigo-400"
-                    value="256"
+                    value={
+                        fieldOfficerLoading
+                            ? "--"
+                            : fieldOfficerStats.activeOfficers
+                    }
                     title="Field Officers"
-                    trend="↑ 5%"
+                    trend={
+                        fieldOfficerLoading
+                            ? "Loading"
+                            : `${fieldOfficerStats.totalOfficers} Total`
+                    }
                     trendClass="text-emerald-400"
-                    footer="On Ground"
+                    footer={
+                        fieldOfficerLoading
+                            ? "Fetching current operations"
+                            : `${fieldOfficerStats.activeOfficers} Active • ${fieldOfficerStats.inactiveOfficers} Inactive`
+                    }
                 />
             </div>
 
@@ -542,11 +657,11 @@ function Dashboard() {
                                 trackUserLocation={false}
                             />
 
-                            {incidentLocations.map(
+                            {mapIncidents.map(
                                 (incident) => (
                                     <Marker
                                         key={
-                                            incident.id
+                                            incident._id
                                         }
                                         longitude={
                                             incident.longitude
@@ -633,15 +748,11 @@ function Dashboard() {
                                 >
                                     <div className="min-w-[180px] text-slate-900">
                                         <p className="text-xs font-semibold">
-                                            {
-                                                selectedIncident.label
-                                            }
+                                            {selectedIncident.label}
                                         </p>
 
                                         <p className="mt-1 text-[10px] text-slate-500">
-                                            {
-                                                selectedIncident.location
-                                            }
+                                            {selectedIncident.location}
                                         </p>
 
                                         <div className="mt-3 h-px bg-slate-200" />
@@ -652,9 +763,7 @@ function Dashboard() {
                                             </span>
 
                                             <span className="text-xs font-semibold text-slate-900">
-                                                {
-                                                    selectedIncident.count
-                                                }
+                                                {selectedIncident.count}
                                             </span>
                                         </div>
 
@@ -670,9 +779,19 @@ function Dashboard() {
                                                         selectedIncident.color,
                                                 }}
                                             >
-                                                {
-                                                    selectedIncident.level
-                                                }
+                                                {selectedIncident.level}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-1 flex items-center justify-between">
+                                            <span className="text-[10px] text-slate-500">
+                                                People Affected
+                                            </span>
+
+                                            <span className="text-xs font-semibold text-slate-900">
+                                                {formatNumber(
+                                                    selectedIncident.peopleAffected
+                                                )}
                                             </span>
                                         </div>
                                     </div>
@@ -680,9 +799,35 @@ function Dashboard() {
                             )}
                         </Map>
 
+                        {mapLoading && (
+                            <div className="pointer-events-none absolute left-3 top-3 rounded-[5px] border border-[#29445b] bg-[#071827]/90 px-3 py-2 shadow-lg backdrop-blur-sm">
+                                <span className="text-[9px] font-medium text-slate-300">
+                                    Loading incidents...
+                                </span>
+                            </div>
+                        )}
+
+                        {!mapLoading && mapError && (
+                            <div className="pointer-events-none absolute left-3 top-3 rounded-[5px] border border-red-500/20 bg-[#071827]/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+                                <span className="text-[9px] font-medium text-red-400">
+                                    {mapError}
+                                </span>
+                            </div>
+                        )}
+
+                        {!mapLoading &&
+                            !mapError &&
+                            mapIncidents.length === 0 && (
+                                <div className="pointer-events-none absolute left-3 top-3 rounded-[5px] border border-[#29445b] bg-[#071827]/90 px-3 py-2 shadow-lg backdrop-blur-sm">
+                                    <span className="text-[9px] font-medium text-slate-300">
+                                        No incidents with map location
+                                    </span>
+                                </div>
+                            )}
+
                         {/* LIVE MAP STATUS */}
 
-                        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-[5px] border border-[#29445b] bg-[#071827]/90 px-3 py-2 shadow-lg backdrop-blur-sm">
+                        <div className="pointer-events-none absolute left-3 top-12 flex items-center gap-2 rounded-[5px] border border-[#29445b] bg-[#071827]/90 px-3 py-2 shadow-lg backdrop-blur-sm">
                             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
 
                             <span className="text-[9px] font-medium text-slate-300">
@@ -734,69 +879,64 @@ function Dashboard() {
                     action="View All"
                 >
                     <div className="divide-y divide-[#173149]">
-                        {incidents.map(
-                            (incident) => (
-                                <div
-                                    key={
-                                        incident.title
-                                    }
-                                    className="
-                                        flex items-center gap-3
-                                        py-3
-                                    "
-                                >
-                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[5px] border border-[#24394d] bg-gradient-to-br from-[#172b40] to-[#0a1726]">
-                                        <TriangleAlert
-                                            size={17}
-                                            className={
-                                                incident.level ===
-                                                "Critical"
-                                                    ? "text-red-400"
-                                                    : incident.level ===
-                                                        "High"
-                                                      ? "text-orange-400"
-                                                      : incident.level ===
-                                                          "Medium"
-                                                        ? "text-amber-400"
-                                                        : "text-cyan-400"
-                                            }
-                                        />
-                                    </div>
+                        {analyticsLoading ? (
+                            <div className="py-8 text-center text-[10px] text-slate-500">
+                                Loading incidents...
+                            </div>
+                        ) : analyticsError ? (
+                            <div className="py-8 text-center text-[10px] text-red-400">
+                                {analyticsError}
+                            </div>
+                        ) : analytics?.recentIncidents?.length ? (
+                            analytics.recentIncidents.map((incident) => {
+                                const level = formatLabel(incident.severity);
+                                const location = [
+                                    incident.location?.address,
+                                    incident.location?.city,
+                                    incident.location?.state,
+                                ]
+                                    .filter(Boolean)
+                                    .join(", ");
 
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-[11px] font-medium text-slate-200">
-                                            {
-                                                incident.title
-                                            }
-                                        </p>
-
-                                        <p className="mt-1 flex items-center gap-1 truncate text-[9px] text-slate-500">
-                                            <MapPin
-                                                size={
-                                                    10
-                                                }
+                                return (
+                                    <div
+                                        key={incident._id}
+                                        className="flex items-center gap-3 py-3"
+                                    >
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[5px] border border-[#24394d] bg-gradient-to-br from-[#172b40] to-[#0a1726]">
+                                            <TriangleAlert
+                                                size={17}
+                                                className={getSeverityIconClass(
+                                                    incident.severity
+                                                )}
                                             />
-                                            {
-                                                incident.location
-                                            }
-                                        </p>
-                                    </div>
+                                        </div>
 
-                                    <div className="text-right">
-                                        <p className="text-[9px] text-slate-500">
-                                            {
-                                                incident.time
-                                            }
-                                        </p>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[11px] font-medium text-slate-200">
+                                                {incident.title}
+                                            </p>
 
-                                        <Severity
-                                            level={
-                                                incident.level
-                                            }
-                                        />
+                                            <p className="mt-1 flex items-center gap-1 truncate text-[9px] text-slate-500">
+                                                <MapPin size={10} />
+                                                {location || "Location unavailable"}
+                                            </p>
+                                        </div>
+
+                                        <div className="text-right">
+                                            <p className="text-[9px] text-slate-500">
+                                                {formatRelativeTime(incident.createdAt)}
+                                            </p>
+
+                                            <Severity level={level} />
+                                        </div>
                                     </div>
-                                </div>
-                            )
+                                );
+                            })
+                        ) : (
+                            <div className="py-8 text-center text-[10px] text-slate-500">
+                                No incidents found.
+                            </div>
                         )}
                     </div>
                 </Panel>
@@ -809,16 +949,31 @@ function Dashboard() {
                         action="View All"
                     >
                         <div className="space-y-0.5">
-                            {resources.map(
-                                (resource) => {
+                            {resourceLoading ? (
+                                <div className="py-8 text-center text-[10px] text-slate-500">
+                                    Loading resources...
+                                </div>
+                            ) : resourceError ? (
+                                <div className="py-8 text-center text-[10px] text-red-400">
+                                    {resourceError}
+                                </div>
+                            ) : emergencyResources.length ? (
+                                emergencyResources.map((resource) => {
+                                    const resourceIcons = {
+                                        rescue_teams: UserRound,
+                                        ambulances: Ambulance,
+                                        helicopters: Plane,
+                                        relief_camps: Building2,
+                                        medical_units: Cross,
+                                    };
+
                                     const Icon =
-                                        resource.icon;
+                                        resourceIcons[resource.type] ||
+                                        UserRound;
 
                                     return (
                                         <div
-                                            key={
-                                                resource.name
-                                            }
+                                            key={resource._id}
                                             className="
                                                 group flex items-center gap-3
                                                 rounded-[5px]
@@ -829,9 +984,7 @@ function Dashboard() {
                                         >
                                             <div className="flex h-7 w-7 items-center justify-center rounded-[5px] bg-[#102538]">
                                                 <Icon
-                                                    size={
-                                                        15
-                                                    }
+                                                    size={15}
                                                     className="
                                                         text-slate-400
                                                         transition
@@ -840,27 +993,36 @@ function Dashboard() {
                                                 />
                                             </div>
 
-                                            <span className="flex-1 text-[10px] text-slate-300">
-                                                {
-                                                    resource.name
-                                                }
+                                            <span className="flex-1 truncate text-[10px] text-slate-300">
+                                                {resource.name}
                                             </span>
 
-                                            <span className="text-[11px] font-semibold text-slate-200">
-                                                {
-                                                    resource.value
-                                                }
-                                            </span>
+                                            <div className="text-right">
+                                                <span className="text-[11px] font-semibold text-slate-200">
+                                                    {formatNumber(
+                                                        resource.available
+                                                    )}
+                                                    <span className="text-[9px] font-normal text-slate-500">
+                                                        {" "}
+                                                        /{" "}
+                                                        {formatNumber(
+                                                            resource.total
+                                                        )}
+                                                    </span>
+                                                </span>
+                                            </div>
 
                                             <ChevronRight
-                                                size={
-                                                    14
-                                                }
+                                                size={14}
                                                 className="text-slate-600"
                                             />
                                         </div>
                                     );
-                                }
+                                })
+                            ) : (
+                                <div className="py-8 text-center text-[10px] text-slate-500">
+                                    No emergency resources found.
+                                </div>
                             )}
                         </div>
                     </Panel>
@@ -900,11 +1062,11 @@ function Dashboard() {
                     title="Incident Trends"
                     action="Last 7 Days"
                 >
-                    <TrendChart />
+                    <TrendChart data={buildTrendData(analytics?.dailyTrend)} />
                 </Panel>
 
                 <Panel title="Incidents by Category">
-                    <CategoryChart />
+                    <CategoryChart data={buildCategoryData(analytics?.typeBreakdown)} total={analytics?.overview?.totalIncidents ?? 0} />
                 </Panel>
 
                 <Panel
@@ -928,8 +1090,16 @@ function Dashboard() {
                 <StatusCard
                     icon={UserRound}
                     title="Field Operations"
-                    value="256 Officers"
-                    description="Officers currently active on ground."
+                    value={
+                        fieldOfficerLoading
+                            ? "Loading..."
+                            : `${fieldOfficerStats.activeOfficers} Active Officers`
+                    }
+                    description={
+                        fieldOfficerLoading
+                            ? "Fetching current field operations."
+                            : `${fieldOfficerStats.totalOfficers} registered • ${fieldOfficerStats.inactiveOfficers} inactive`
+                    }
                 />
 
                 <StatusCard
@@ -1198,7 +1368,7 @@ function ChartTooltip({
    TREND CHART
 ========================================= */
 
-function TrendChart() {
+function TrendChart({ data = [] }) {
     return (
         <div className="h-[245px] w-full">
             <ResponsiveContainer
@@ -1206,7 +1376,7 @@ function TrendChart() {
                 height="100%"
             >
                 <LineChart
-                    data={trendData}
+                    data={data}
                     margin={{
                         top: 10,
                         right: 10,
@@ -1263,23 +1433,6 @@ function TrendChart() {
                         }}
                     />
 
-                    <Line
-                        type="monotone"
-                        dataKey="critical"
-                        name="Critical"
-                        stroke="#ef4444"
-                        strokeWidth={1.5}
-                        dot={false}
-                    />
-
-                    <Line
-                        type="monotone"
-                        dataKey="high"
-                        name="High"
-                        stroke="#f97316"
-                        strokeWidth={1.5}
-                        dot={false}
-                    />
                 </LineChart>
             </ResponsiveContainer>
 
@@ -1289,15 +1442,6 @@ function TrendChart() {
                     label="Total"
                 />
 
-                <ChartLegend
-                    color="bg-red-500"
-                    label="Critical"
-                />
-
-                <ChartLegend
-                    color="bg-orange-400"
-                    label="High"
-                />
             </div>
         </div>
     );
@@ -1326,7 +1470,7 @@ function ChartLegend({
    CATEGORY CHART
 ========================================= */
 
-function CategoryChart() {
+function CategoryChart({ data = [], total = 0 }) {
     return (
         <div className="h-[245px] w-full">
             <div className="relative h-[170px]">
@@ -1336,7 +1480,7 @@ function CategoryChart() {
                 >
                     <PieChart>
                         <Pie
-                            data={categoryData}
+                            data={data}
                             dataKey="value"
                             nameKey="name"
                             cx="50%"
@@ -1346,7 +1490,7 @@ function CategoryChart() {
                             paddingAngle={3}
                             stroke="none"
                         >
-                            {categoryData.map(
+                            {data.map(
                                 (item, index) => (
                                     <Cell
                                         key={
@@ -1354,7 +1498,7 @@ function CategoryChart() {
                                         }
                                         fill={
                                             categoryColors[
-                                                index
+                                            index
                                             ]
                                         }
                                     />
@@ -1370,7 +1514,7 @@ function CategoryChart() {
 
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                     <p className="text-[21px] font-semibold text-white">
-                        42
+                        {total}
                     </p>
 
                     <p className="text-[9px] text-slate-500">
@@ -1380,7 +1524,7 @@ function CategoryChart() {
             </div>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 px-2">
-                {categoryData.map(
+                {data.map(
                     (item, index) => (
                         <div
                             key={item.name}
@@ -1391,7 +1535,7 @@ function CategoryChart() {
                                 style={{
                                     backgroundColor:
                                         categoryColors[
-                                            index
+                                        index
                                         ],
                                 }}
                             />

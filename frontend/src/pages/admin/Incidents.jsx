@@ -212,6 +212,9 @@ function Incidents() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showReportModal, setShowReportModal] = useState(false);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedIncident, setSelectedIncident] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState("");
     const [form, setForm] = useState({
@@ -344,6 +347,9 @@ function Incidents() {
                 ...incident,
                 id: `INC-${year}-${shortId}`,
                 mongoId: incident._id,
+                rawType: incident.type,
+                rawSeverity: incident.severity,
+                rawStatus: incident.status,
                 type: formatType(incident.type),
                 severity: formatSeverity(incident.severity),
                 status: formatStatus(incident.status),
@@ -404,6 +410,111 @@ function Incidents() {
     const resolvedIncidents = incidents.filter(
         (incident) => incident.status === "resolved"
     ).length;
+
+    const openDetailsModal = (incident) => {
+        setSelectedIncident(incident);
+        setOpenMenu(null);
+        setShowDetailsModal(true);
+    };
+
+    const openEditModal = (incident) => {
+        setSelectedIncident(incident);
+        setForm({
+            title: incident.title || "",
+            description: incident.description || "",
+            type: incident.rawType || "other",
+            severity: incident.rawSeverity || "medium",
+            status: incident.rawStatus || "reported",
+            location: {
+                address: incident.location?.address || "",
+                city: incident.location?.city || "",
+                state: incident.location?.state || "",
+                country: incident.location?.country || "India",
+                latitude: incident.location?.latitude ?? "",
+                longitude: incident.location?.longitude ?? "",
+            },
+            peopleAffected: String(incident.peopleAffected ?? incident.people ?? 0),
+        });
+        setFormError("");
+        setOpenMenu(null);
+        setShowEditModal(true);
+    };
+
+    const closeDetailsModal = () => {
+        setShowDetailsModal(false);
+        setSelectedIncident(null);
+    };
+
+    const closeEditModal = () => {
+        if (submitting) return;
+        setShowEditModal(false);
+        setSelectedIncident(null);
+        resetForm();
+    };
+
+    const updateIncident = async (event) => {
+        event.preventDefault();
+
+        if (!selectedIncident?.mongoId) return;
+
+        if (!form.title.trim()) {
+            setFormError("Incident title is required.");
+            return;
+        }
+
+        if (!form.location.city.trim()) {
+            setFormError("City is required.");
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            setFormError("");
+
+            const payload = {
+                title: form.title.trim(),
+                description: form.description.trim(),
+                type: form.type,
+                severity: form.severity,
+                status: form.status,
+                location: {
+                    address: form.location.address.trim(),
+                    city: form.location.city.trim(),
+                    state: form.location.state.trim(),
+                    country: form.location.country.trim() || "India",
+                    latitude: form.location.latitude === "" ? undefined : Number(form.location.latitude),
+                    longitude: form.location.longitude === "" ? undefined : Number(form.location.longitude),
+                },
+                peopleAffected: Math.max(0, Number(form.peopleAffected) || 0),
+            };
+
+            const response = await fetch(`${API_BASE_URL}/incidents/${selectedIncident.mongoId}`, {
+                method: "PUT",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "Unable to update incident");
+            }
+
+            setIncidents((current) =>
+                current.map((incident) =>
+                    incident._id === selectedIncident.mongoId ? data.incident : incident
+                )
+            );
+
+            closeEditModal();
+        } catch (error) {
+            console.error("Update Incident Error:", error);
+            setFormError(error.message || "Unable to update incident");
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     const clearFilters = () => {
         setSearch("");
@@ -474,6 +585,7 @@ function Incidents() {
             description: "",
             type: "flood",
             severity: "medium",
+            status: "reported",
             location: {
                 address: "",
                 city: "",
@@ -1142,6 +1254,7 @@ function Incidents() {
                                             >
                                                 <button
                                                     type="button"
+                                                    onClick={() => openDetailsModal(incident)}
                                                     className="
                                                         flex w-full
                                                         items-center gap-2.5
@@ -1160,6 +1273,7 @@ function Incidents() {
 
                                                 <button
                                                     type="button"
+                                                    onClick={() => openEditModal(incident)}
                                                     className="
                                                         flex w-full
                                                         items-center gap-2.5
@@ -1182,7 +1296,7 @@ function Incidents() {
                                                     type="button"
                                                     onClick={() =>
                                                         deleteIncident(
-                                                            incident.id
+                                                            incident.mongoId
                                                         )
                                                     }
                                                     className="
@@ -1332,6 +1446,139 @@ function Incidents() {
                     </div>
                 </div>
             </div>
+
+            {showDetailsModal && selectedIncident && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-[2px]"
+                    onClick={closeDetailsModal}
+                >
+                    <div
+                        className="w-full max-w-[560px] rounded-[6px] border border-[#23445c] bg-[#091a2a] shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-[#173149] px-5 py-4">
+                            <div>
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-cyan-400">Incident Details</p>
+                                <h2 className="mt-1 text-[17px] font-semibold text-white">{selectedIncident.title}</h2>
+                            </div>
+                            <button type="button" onClick={closeDetailsModal} className="flex h-8 w-8 items-center justify-center rounded-[5px] border border-[#173149] bg-[#071827] text-slate-500 transition hover:border-[#28506d] hover:text-slate-200">
+                                <X size={15} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4 p-5">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <SeverityBadge severity={selectedIncident.rawSeverity} />
+                                <StatusBadge status={selectedIncident.rawStatus} />
+                                <span className="rounded-[4px] bg-white/[0.03] px-2 py-1 text-[9px] text-slate-500">{selectedIncident.id}</span>
+                            </div>
+
+                            <div>
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Description</p>
+                                <p className="mt-1 text-[11px] leading-5 text-slate-300">{selectedIncident.description || "No description provided."}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-[5px] border border-[#173149] bg-[#071827] p-3">
+                                    <p className="text-[9px] text-slate-600">Location</p>
+                                    <p className="mt-1 text-[10px] text-slate-300">{selectedIncident.location || "Location unavailable"}</p>
+                                </div>
+                                <div className="rounded-[5px] border border-[#173149] bg-[#071827] p-3">
+                                    <p className="text-[9px] text-slate-600">People Affected</p>
+                                    <p className="mt-1 text-[14px] font-semibold text-white">{selectedIncident.people || 0}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between border-t border-[#173149] pt-3">
+                                <span className="text-[9px] text-slate-600">Reported</span>
+                                <span className="text-[10px] text-slate-300">{selectedIncident.time}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showEditModal && selectedIncident && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-[2px]"
+                    onClick={closeEditModal}
+                >
+                    <div
+                        className="custom-scrollbar w-full max-w-[620px] max-h-[90vh] overflow-y-auto rounded-[6px] border border-[#23445c] bg-[#091a2a] shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between border-b border-[#173149] px-5 py-4">
+                            <div>
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-cyan-400">Incident Management</p>
+                                <h2 className="mt-1 text-[17px] font-semibold text-white">Edit Incident</h2>
+                            </div>
+                            <button type="button" onClick={closeEditModal} className="flex h-8 w-8 items-center justify-center rounded-[5px] border border-[#173149] bg-[#071827] text-slate-500 transition hover:border-[#28506d] hover:text-slate-200">
+                                <X size={15} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={updateIncident} className="space-y-4 p-5">
+                            <div>
+                                <label className="mb-1.5 block text-[10px] font-medium text-slate-400">Incident Title</label>
+                                <input value={form.title} onChange={(e) => updateForm("title", e.target.value)} className="h-9 w-full rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[12px] text-slate-200 outline-none focus:border-cyan-500/50" />
+                            </div>
+
+                            <div>
+                                <label className="mb-1.5 block text-[10px] font-medium text-slate-400">Description</label>
+                                <textarea value={form.description} onChange={(e) => updateForm("description", e.target.value)} rows={3} className="w-full resize-none rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 py-2 text-[12px] text-slate-200 outline-none focus:border-cyan-500/50" />
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-medium text-slate-400">Type</label>
+                                    <select value={form.type} onChange={(e) => updateForm("type", e.target.value)} className="h-9 w-full rounded-[5px] border border-[#1c3a52] bg-[#071827] px-2 text-[11px] text-slate-300 outline-none">
+                                        <option value="flood">Flood</option><option value="landslide">Landslide</option><option value="forest_fire">Forest Fire</option><option value="earthquake">Earthquake</option><option value="heavy_rain">Heavy Rain</option><option value="road_accident">Road Accident</option><option value="fire">Fire</option><option value="medical_emergency">Medical Emergency</option><option value="infrastructure">Infrastructure</option><option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-medium text-slate-400">Severity</label>
+                                    <select value={form.severity} onChange={(e) => updateForm("severity", e.target.value)} className="h-9 w-full rounded-[5px] border border-[#1c3a52] bg-[#071827] px-2 text-[11px] text-slate-300 outline-none">
+                                        <option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-medium text-slate-400">Status</label>
+                                    <select value={form.status} onChange={(e) => updateForm("status", e.target.value)} className="h-9 w-full rounded-[5px] border border-[#1c3a52] bg-[#071827] px-2 text-[11px] text-slate-300 outline-none">
+                                        <option value="reported">Reported</option><option value="investigating">Investigating</option><option value="responding">Responding</option><option value="resolved">Resolved</option><option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-[10px] font-medium text-slate-400">People Affected</label>
+                                    <input type="number" min="0" value={form.peopleAffected} onChange={(e) => updateForm("peopleAffected", e.target.value)} className="h-9 w-full rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[11px] text-slate-200 outline-none" />
+                                </div>
+                            </div>
+
+                            <div className="border-t border-[#173149] pt-4">
+                                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-cyan-400">Location</p>
+                                <div className="space-y-3">
+                                    <input value={form.location.address} onChange={(e) => updateLocation("address", e.target.value)} placeholder="Address / landmark" className="h-9 w-full rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-cyan-500/50" />
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                        <input value={form.location.city} onChange={(e) => updateLocation("city", e.target.value)} placeholder="City *" className="h-9 rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-cyan-500/50" />
+                                        <input value={form.location.state} onChange={(e) => updateLocation("state", e.target.value)} placeholder="State" className="h-9 rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-cyan-500/50" />
+                                        <input value={form.location.country} onChange={(e) => updateLocation("country", e.target.value)} placeholder="Country" className="h-9 rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[12px] text-slate-200 outline-none placeholder:text-slate-600 focus:border-cyan-500/50" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="number" step="any" value={form.location.latitude} onChange={(e) => updateLocation("latitude", e.target.value)} placeholder="Latitude" className="h-9 rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[12px] text-slate-200 outline-none" />
+                                        <input type="number" step="any" value={form.location.longitude} onChange={(e) => updateLocation("longitude", e.target.value)} placeholder="Longitude" className="h-9 rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3 text-[12px] text-slate-200 outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {formError && <div className="rounded-[5px] border border-red-500/20 bg-red-500/[0.07] px-3 py-2 text-[10px] text-red-400">{formError}</div>}
+
+                            <div className="flex justify-end gap-2 border-t border-[#173149] pt-4">
+                                <button type="button" onClick={closeEditModal} disabled={submitting} className="h-9 rounded-[5px] border border-[#1c3a52] bg-[#071827] px-3.5 text-[12px] font-medium text-slate-400 transition hover:border-[#28506d] hover:text-slate-200 disabled:opacity-50">Cancel</button>
+                                <button type="submit" disabled={submitting} className="h-9 rounded-[5px] border border-cyan-400/30 bg-cyan-400 px-4 text-[12px] font-medium text-[#03121d] transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? "Saving..." : "Save Changes"}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* LOCAL STYLES */}
             <style>{`

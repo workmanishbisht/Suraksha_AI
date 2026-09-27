@@ -104,6 +104,7 @@ function MyReports() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedReport, setSelectedReport] = useState(null);
 
     const reportsPerPage = 4;
 
@@ -258,11 +259,10 @@ function MyReports() {
                                 key={status}
                                 type="button"
                                 onClick={() => handleStatus(status)}
-                                className={`rounded-[5px] px-3 py-2 text-xs font-medium transition ${
-                                    statusFilter === status
+                                className={`rounded-[5px] px-3 py-2 text-xs font-medium transition ${statusFilter === status
                                         ? "bg-cyan-500 text-slate-950"
                                         : "border border-slate-700 bg-[#091522] text-slate-400 hover:text-white"
-                                }`}
+                                    }`}
                             >
                                 {status}
                             </button>
@@ -356,11 +356,10 @@ function MyReports() {
 
                                         <td className="px-5 py-4">
                                             <span
-                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                                                    severityConfig[
-                                                        report.severity
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${severityConfig[
+                                                    report.severity
                                                     ]
-                                                }`}
+                                                    }`}
                                             >
                                                 {report.severity}
                                             </span>
@@ -379,10 +378,7 @@ function MyReports() {
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    console.log(
-                                                        "View report:",
-                                                        report.id
-                                                    )
+                                                    setSelectedReport(report)
                                                 }
                                                 className="inline-flex h-8 w-8 items-center justify-center rounded-[4px] text-slate-500 transition hover:bg-cyan-500/10 hover:text-cyan-400"
                                                 title="View Report"
@@ -432,11 +428,10 @@ function MyReports() {
                                     </div>
 
                                     <span
-                                        className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-medium ${
-                                            severityConfig[
-                                                report.severity
+                                        className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-medium ${severityConfig[
+                                            report.severity
                                             ]
-                                        }`}
+                                            }`}
                                     >
                                         {report.severity}
                                     </span>
@@ -464,6 +459,7 @@ function MyReports() {
 
                                     <button
                                         type="button"
+                                        onClick={() => setSelectedReport(report)}
                                         className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-400"
                                     >
                                         View
@@ -550,6 +546,122 @@ function MyReports() {
                     </div>
                 )}
             </div>
+
+            {/* Report Details Modal */}
+            {selectedReport && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+                    onClick={() => setSelectedReport(null)}
+                >
+                    <div
+                        className="w-full max-w-2xl overflow-hidden rounded-[6px] border border-[var(--border-light)] bg-[#071827]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between border-b border-[var(--border)] px-5 py-4">
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400">
+                                    Incident Details
+                                </p>
+                                <h2 className="mt-1 text-xl font-semibold text-white">
+                                    {selectedReport.title}
+                                </h2>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setSelectedReport(null)}
+                                className="flex h-9 w-9 items-center justify-center rounded-[5px] border border-[var(--border)] text-slate-400 transition hover:bg-white/5 hover:text-white"
+                                aria-label="Close"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="space-y-5 p-5">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${severityConfig[selectedReport.severity]
+                                        }`}
+                                >
+                                    {selectedReport.severity}
+                                </span>
+
+                                {(() => {
+                                    const modalStatus =
+                                        statusConfig[selectedReport.status] ||
+                                        statusConfig.Pending;
+                                    const ModalStatusIcon = modalStatus.icon;
+
+                                    return (
+                                        <span
+                                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${modalStatus.className}`}
+                                        >
+                                            <ModalStatusIcon size={13} />
+                                            {selectedReport.status}
+                                        </span>
+                                    );
+                                })()}
+
+                                <span className="rounded-[5px] bg-white/[0.03] px-2.5 py-1 text-[11px] text-slate-500">
+                                    #{selectedReport.id}
+                                </span>
+                            </div>
+
+                            <div>
+                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                                    Description
+                                </p>
+                                <p className="text-sm leading-6 text-slate-300">
+                                    {selectedReport.description}
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="rounded-[5px] border border-[var(--border)] bg-[#091522] p-4">
+                                    <p className="text-[10px] uppercase tracking-wide text-slate-600">
+                                        Location
+                                    </p>
+                                    <div className="mt-2 flex items-start gap-2 text-sm text-slate-300">
+                                        <MapPin
+                                            size={15}
+                                            className="mt-0.5 shrink-0 text-cyan-400"
+                                        />
+                                        <span>{selectedReport.location}</span>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-[5px] border border-[var(--border)] bg-[#091522] p-4">
+                                    <p className="text-[10px] uppercase tracking-wide text-slate-600">
+                                        Reported
+                                    </p>
+                                    <div className="mt-2 flex items-start gap-2 text-sm text-slate-300">
+                                        <CalendarDays
+                                            size={15}
+                                            className="mt-0.5 shrink-0 text-cyan-400"
+                                        />
+                                        <span>
+                                            {selectedReport.date}
+                                            <span className="block text-xs text-slate-500">
+                                                {selectedReport.time}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end border-t border-[var(--border)] px-5 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedReport(null)}
+                                className="rounded-[5px] bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

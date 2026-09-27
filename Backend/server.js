@@ -9,6 +9,12 @@ const authRoutes = require("./routes/authRoutes");
 const locationRoutes = require("./routes/locationRoutes");
 const weatherRoutes = require("./routes/weatherRoutes");
 const incidentRoutes = require("./routes/incidentRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+const fieldOfficerRoutes = require("./routes/fieldOfficerRoutes");
+const emergencyResourceRoutes = require("./routes/emergencyResourceRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const twoFactorRoutes = require("./routes/twoFactorRoutes");
 
 dotenv.config();
 
@@ -41,13 +47,55 @@ app.use(cookieParser());
    API ROUTES
 ========================================= */
 
-app.use("/api/auth", authRoutes);
+app.use(
+    "/api/auth",
+    authRoutes
+);
 
-app.use("/api/location", locationRoutes);
+app.use(
+    "/api/location",
+    locationRoutes
+);
 
-app.use("/api/weather", weatherRoutes);
+app.use(
+    "/api/weather",
+    weatherRoutes
+);
 
-app.use("/api/incidents", incidentRoutes);
+app.use(
+    "/api/incidents",
+    incidentRoutes
+);
+
+app.use(
+    "/api/analytics",
+    analyticsRoutes
+);
+
+app.use(
+    "/api/field-officers",
+    fieldOfficerRoutes
+);
+
+app.use(
+    "/api/emergency-resources",
+    emergencyResourceRoutes
+);
+
+app.use(
+    "/api/reports",
+    reportRoutes
+);
+
+app.use(
+    "/api/profile",
+    profileRoutes
+);
+
+app.use(
+    "/api/2fa",
+    twoFactorRoutes
+);
 
 /* =========================================
    HEALTH CHECK
