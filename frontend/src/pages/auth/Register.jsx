@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
 import {
     User,
     Mail,
@@ -16,9 +15,7 @@ import {
     Users,
     ChevronDown,
 } from "lucide-react";
-
 import { useAuth } from "../../context/AuthContext";
-
 import logo from "../../assets/images/suraksha-logo.png";
 import registerBg from "../../assets/images/login-bg.webp";
 
@@ -28,10 +25,8 @@ function Register() {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
     const [accountType, setAccountType] = useState("Citizen");
     const [accountOpen, setAccountOpen] = useState(false);
-
     const [terms, setTerms] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -65,22 +60,32 @@ function Register() {
 
         const newErrors = {};
 
-        const nameRegex = /^[A-Za-zÀ-ÿ]+(?:[ '-][A-Za-zÀ-ÿ]+)*$/;
-        const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
-        const phoneRegex = /^[6-9]\d{9}$/;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const nameRegex =
+            /^[A-Za-zÀ-ÿ]+(?:[ '-][A-Za-zÀ-ÿ]+)*$/;
+
+        const usernameRegex =
+            /^[a-zA-Z0-9_]{3,30}$/;
+
+        const phoneRegex =
+            /^[6-9]\d{9}$/;
+
+        const emailRegex =
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!formData.name.trim()) {
             newErrors.name = "Full name is required.";
         } else if (formData.name.trim().length < 3) {
-            newErrors.name = "Full name must be at least 3 characters.";
+            newErrors.name =
+                "Full name must be at least 3 characters.";
         } else if (!nameRegex.test(formData.name.trim())) {
             newErrors.name = "Enter a valid full name.";
         }
 
         if (!formData.username.trim()) {
             newErrors.username = "Username is required.";
-        } else if (!usernameRegex.test(formData.username.trim())) {
+        } else if (
+            !usernameRegex.test(formData.username.trim())
+        ) {
             newErrors.username =
                 "Username must be 3-30 characters using letters, numbers or underscore.";
         }
@@ -88,19 +93,26 @@ function Register() {
         const phone = formData.phone.replace(/\D/g, "");
 
         if (!formData.phone.trim()) {
-            newErrors.phone = "Mobile number is required.";
+            newErrors.phone =
+                "Mobile number is required.";
         } else if (!phoneRegex.test(phone)) {
-            newErrors.phone = "Enter a valid 10-digit mobile number.";
+            newErrors.phone =
+                "Enter a valid 10-digit mobile number.";
         }
 
         if (!formData.email.trim()) {
-            newErrors.email = "Email address is required.";
-        } else if (!emailRegex.test(formData.email.trim())) {
-            newErrors.email = "Enter a valid email address.";
+            newErrors.email =
+                "Email address is required.";
+        } else if (
+            !emailRegex.test(formData.email.trim())
+        ) {
+            newErrors.email =
+                "Enter a valid email address.";
         }
 
         if (!formData.password) {
-            newErrors.password = "Password is required.";
+            newErrors.password =
+                "Password is required.";
         } else if (formData.password.length < 8) {
             newErrors.password =
                 "Password must be at least 8 characters.";
@@ -119,7 +131,8 @@ function Register() {
             newErrors.confirmPassword =
                 "Please confirm your password.";
         } else if (
-            formData.password !== formData.confirmPassword
+            formData.password !==
+            formData.confirmPassword
         ) {
             newErrors.confirmPassword =
                 "Passwords do not match.";
@@ -133,7 +146,9 @@ function Register() {
         setErrors(newErrors);
 
         if (Object.keys(newErrors).length > 0) {
-            toast.error("Please fix the highlighted fields.");
+            toast.error(
+                "Please fix the highlighted fields."
+            );
             return;
         }
 
@@ -148,19 +163,23 @@ function Register() {
                 accountType,
             });
 
-            toast.success("Account created successfully!");
+            toast.success(
+                "Account created successfully!"
+            );
 
             setTimeout(() => {
                 navigate("/login", {
                     replace: true,
                     state: {
-                        registeredUsername: formData.username.trim(),
+                        registeredUsername:
+                            formData.username.trim(),
                     },
                 });
             }, 800);
         } catch (error) {
             toast.error(
-                error.message || "Unable to create your account."
+                error.message ||
+                "Unable to create your account."
             );
         } finally {
             setLoading(false);
@@ -169,8 +188,29 @@ function Register() {
 
     return (
         <main className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
-            <div className="grid min-h-screen lg:grid-cols-[58%_42%]">
+            <style>{`
+                input:-webkit-autofill,
+                input:-webkit-autofill:hover,
+                input:-webkit-autofill:focus,
+                input:-webkit-autofill:active {
+                    -webkit-box-shadow: 0 0 0 1000px var(--background) inset !important;
+                    box-shadow: 0 0 0 1000px var(--background) inset !important;
+                    -webkit-text-fill-color: var(--text-primary) !important;
+                    caret-color: var(--text-primary) !important;
+                    transition: background-color 9999s ease-in-out 0s !important;
+                }
 
+                input:-moz-autofill {
+                    background-color: var(--background) !important;
+                    color: var(--text-primary) !important;
+                }
+
+                input:-webkit-autofill::first-line {
+                    -webkit-text-fill-color: var(--text-primary) !important;
+                }
+            `}</style>
+
+            <div className="grid min-h-screen lg:grid-cols-[58%_42%]">
                 {/* LEFT SIDE */}
 
                 <section
@@ -198,6 +238,8 @@ function Register() {
                             w-full flex-col px-10 py-9 xl:px-16
                         "
                     >
+                        {/* Logo */}
+
                         <div>
                             <img
                                 src={logo}
@@ -205,6 +247,8 @@ function Register() {
                                 className="h-auto w-[245px] object-contain"
                             />
                         </div>
+
+                        {/* Hero */}
 
                         <div className="my-auto max-w-2xl">
                             <h1
@@ -246,10 +290,13 @@ function Register() {
                                     xl:text-base
                                 "
                             >
-                                Create your SurakshaAI account to report
-                                emergencies, stay informed and help build
-                                a more resilient tomorrow.
+                                Create your SurakshaAI account to
+                                report emergencies, stay informed
+                                and help build a more resilient
+                                tomorrow.
                             </p>
+
+                            {/* Feature Cards */}
 
                             <div className="mt-8 max-w-[420px] space-y-4">
                                 <FeatureCard
@@ -278,6 +325,8 @@ function Register() {
                             </div>
                         </div>
 
+                        {/* Bottom */}
+
                         <div>
                             <div className="mb-4 h-[3px] w-14 bg-[#159cff]" />
 
@@ -288,17 +337,22 @@ function Register() {
                                 "
                             >
                                 PREPARE
-                                <span className="mx-3">•</span>
+                                <span className="mx-3">
+                                    •
+                                </span>
                                 RESPOND
-                                <span className="mx-3">•</span>
+                                <span className="mx-3">
+                                    •
+                                </span>
                                 RECOVER
-                                <span className="mx-3">•</span>
+                                <span className="mx-3">
+                                    •
+                                </span>
                                 TOGETHER
                             </p>
                         </div>
                     </div>
                 </section>
-
 
                 {/* RIGHT SIDE */}
 
@@ -311,6 +365,7 @@ function Register() {
                     "
                 >
                     <div className="w-full max-w-[540px]">
+                        {/* REGISTER CARD */}
 
                         <div
                             className="
@@ -320,6 +375,8 @@ function Register() {
                                 p-6 sm:p-7
                             "
                         >
+                            {/* Heading */}
+
                             <div className="mb-6">
                                 <h2
                                     className="
@@ -341,16 +398,17 @@ function Register() {
                                     <span className="font-medium text-[#13d7d1]">
                                         SurakshaAI
                                     </span>{" "}
-                                    and be a part of a safer tomorrow.
+                                    and be a part of a safer
+                                    tomorrow.
                                 </p>
                             </div>
 
+                            {/* FORM */}
 
                             <form
                                 onSubmit={handleSubmit}
                                 className="space-y-4"
                             >
-
                                 {/* NAME + USERNAME */}
 
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -374,7 +432,6 @@ function Register() {
                                         error={errors.username}
                                     />
                                 </div>
-
 
                                 {/* PHONE + EMAIL */}
 
@@ -402,7 +459,6 @@ function Register() {
                                     />
                                 </div>
 
-
                                 {/* ACCOUNT TYPE */}
 
                                 <div className="relative">
@@ -419,7 +475,9 @@ function Register() {
                                     <button
                                         type="button"
                                         onClick={() =>
-                                            setAccountOpen(!accountOpen)
+                                            setAccountOpen(
+                                                !accountOpen
+                                            )
                                         }
                                         className="
                                             flex h-[54px] w-full
@@ -451,10 +509,9 @@ function Register() {
                                                 h-4 w-4
                                                 text-[var(--text-muted)]
                                                 transition-transform
-                                                ${
-                                                    accountOpen
-                                                        ? "rotate-180"
-                                                        : ""
+                                                ${accountOpen
+                                                    ? "rotate-180"
+                                                    : ""
                                                 }
                                             `}
                                         />
@@ -482,8 +539,12 @@ function Register() {
                                                     key={type}
                                                     type="button"
                                                     onClick={() => {
-                                                        setAccountType(type);
-                                                        setAccountOpen(false);
+                                                        setAccountType(
+                                                            type
+                                                        );
+                                                        setAccountOpen(
+                                                            false
+                                                        );
                                                     }}
                                                     className="
                                                         w-full
@@ -508,17 +569,19 @@ function Register() {
                                             text-[var(--text-muted)]
                                         "
                                     >
-                                        {accountType === "Citizen" &&
+                                        {accountType ===
+                                            "Citizen" &&
                                             "Citizens can report incidents and receive alerts."}
 
-                                        {accountType === "Field Officer" &&
+                                        {accountType ===
+                                            "Field Officer" &&
                                             "Field officers can manage and respond to incidents."}
 
-                                        {accountType === "Department Officer" &&
+                                        {accountType ===
+                                            "Department Officer" &&
                                             "Department officers can coordinate emergency response."}
                                     </p>
                                 </div>
-
 
                                 {/* PASSWORDS */}
 
@@ -527,25 +590,44 @@ function Register() {
                                         id="password"
                                         label="Password"
                                         placeholder="Create a password"
-                                        showPassword={showPassword}
-                                        setShowPassword={setShowPassword}
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        error={errors.password}
+                                        showPassword={
+                                            showPassword
+                                        }
+                                        setShowPassword={
+                                            setShowPassword
+                                        }
+                                        value={
+                                            formData.password
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        error={
+                                            errors.password
+                                        }
                                     />
 
                                     <PasswordField
                                         id="confirmPassword"
                                         label="Confirm Password"
                                         placeholder="Confirm password"
-                                        showPassword={showConfirmPassword}
-                                        setShowPassword={setShowConfirmPassword}
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        error={errors.confirmPassword}
+                                        showPassword={
+                                            showConfirmPassword
+                                        }
+                                        setShowPassword={
+                                            setShowConfirmPassword
+                                        }
+                                        value={
+                                            formData.confirmPassword
+                                        }
+                                        onChange={
+                                            handleChange
+                                        }
+                                        error={
+                                            errors.confirmPassword
+                                        }
                                     />
                                 </div>
-
 
                                 {/* TERMS */}
 
@@ -561,7 +643,9 @@ function Register() {
                                         type="checkbox"
                                         checked={terms}
                                         onChange={(e) =>
-                                            setTerms(e.target.checked)
+                                            setTerms(
+                                                e.target.checked
+                                            )
                                         }
                                         className="
                                             mt-1 h-4 w-4 shrink-0
@@ -599,7 +683,6 @@ function Register() {
                                         {errors.terms}
                                     </p>
                                 )}
-
 
                                 {/* CREATE ACCOUNT */}
 
@@ -643,9 +726,7 @@ function Register() {
                                         </>
                                     )}
                                 </button>
-
                             </form>
-
 
                             {/* SIGN IN */}
 
@@ -666,7 +747,9 @@ function Register() {
 
                             <button
                                 type="button"
-                                onClick={() => navigate("/login")}
+                                onClick={() =>
+                                    navigate("/login")
+                                }
                                 className="
                                     flex h-[50px] w-full
                                     items-center justify-center
@@ -681,9 +764,7 @@ function Register() {
                             >
                                 Sign In
                             </button>
-
                         </div>
-
 
                         {/* SECURITY */}
 
@@ -702,15 +783,12 @@ function Register() {
                                 Your information is protected.
                             </span>
                         </div>
-
                     </div>
                 </section>
-
             </div>
         </main>
     );
 }
-
 
 /* =========================================================
    INPUT FIELD
@@ -726,6 +804,22 @@ function InputField({
     onChange,
     error,
 }) {
+    const getAutoComplete = () => {
+        if (id === "username") {
+            return "username";
+        }
+
+        if (id === "email") {
+            return "email";
+        }
+
+        if (id === "phone") {
+            return "tel";
+        }
+
+        return "name";
+    };
+
     return (
         <div>
             <label
@@ -756,6 +850,7 @@ function InputField({
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
+                    autoComplete={getAutoComplete()}
                     className={`
                         h-[54px] w-full
                         rounded-[var(--radius-md)]
@@ -769,10 +864,9 @@ function InputField({
                         focus:border-[var(--primary)]
                         focus:ring-2
                         focus:ring-[var(--primary)]/10
-                        ${
-                            error
-                                ? "border-red-500"
-                                : "border-[var(--border-light)]"
+                        ${error
+                            ? "border-red-500"
+                            : "border-[var(--border-light)]"
                         }
                     `}
                 />
@@ -786,7 +880,6 @@ function InputField({
         </div>
     );
 }
-
 
 /* =========================================================
    PASSWORD FIELD
@@ -828,10 +921,15 @@ function PasswordField({
 
                 <input
                     id={id}
-                    type={showPassword ? "text" : "password"}
+                    type={
+                        showPassword
+                            ? "text"
+                            : "password"
+                    }
                     placeholder={placeholder}
                     value={value}
                     onChange={onChange}
+                    autoComplete="new-password"
                     className={`
                         h-[54px] w-full
                         rounded-[var(--radius-md)]
@@ -845,10 +943,9 @@ function PasswordField({
                         focus:border-[var(--primary)]
                         focus:ring-2
                         focus:ring-[var(--primary)]/10
-                        ${
-                            error
-                                ? "border-red-500"
-                                : "border-[var(--border-light)]"
+                        ${error
+                            ? "border-red-500"
+                            : "border-[var(--border-light)]"
                         }
                     `}
                 />
@@ -856,7 +953,9 @@ function PasswordField({
                 <button
                     type="button"
                     onClick={() =>
-                        setShowPassword(!showPassword)
+                        setShowPassword(
+                            !showPassword
+                        )
                     }
                     className="
                         absolute right-4 top-1/2
@@ -882,7 +981,6 @@ function PasswordField({
         </div>
     );
 }
-
 
 /* =========================================================
    FEATURE CARD
@@ -914,7 +1012,9 @@ function FeatureCard({
                     ${bgColor}
                 `}
             >
-                <Icon className={`h-8 w-8 ${iconColor}`} />
+                <Icon
+                    className={`h-8 w-8 ${iconColor}`}
+                />
             </div>
 
             <div>

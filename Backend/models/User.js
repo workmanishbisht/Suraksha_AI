@@ -86,6 +86,12 @@ const userSchema = new mongoose.Schema(
             default: true,
         },
 
+        // Profile image
+        profileImage: {
+            type: String,
+            default: null,
+        },
+
         location: {
             type: locationSchema,
             default: null,

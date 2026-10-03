@@ -14,8 +14,8 @@ import {
     CheckCircle2,
     Radio,
     ChevronDown,
-    X,
     ArrowUpRight,
+    X,
 } from "lucide-react";
 
 const API_BASE_URL = "http://localhost:5000/api";
@@ -768,7 +768,7 @@ function Incidents() {
                 <StatCard
                     icon={Clock3}
                     label="Under Response"
-                    value={respondingIncidents.toString().padStart(2, "0")}
+                    value={respondingIncidents}
                     subtext="Teams currently responding"
                     iconClass="border-orange-400/20 bg-orange-400/[0.07] text-orange-400"
                 />
@@ -1154,13 +1154,16 @@ function Incidents() {
                                     </div>
 
                                     {/* LOCATION */}
-                                    <div className="flex min-w-0 items-center gap-2">
+                                    <div
+                                        className="flex min-w-0 items-center gap-2"
+                                        title={incident.location}
+                                    >
                                         <MapPin
                                             size={14}
                                             className="shrink-0 text-slate-600"
                                         />
 
-                                        <span className="truncate text-[10px] text-slate-400">
+                                        <span className="min-w-0 truncate text-[10px] text-slate-400">
                                             {incident.location}
                                         </span>
                                     </div>
@@ -1245,10 +1248,9 @@ function Incidents() {
                                                     bg-[#0a1c2d]
                                                     p-1
                                                     shadow-[0_12px_30px_rgba(0,0,0,0.35)]
-                                                    ${
-                                                        index >= filteredIncidents.length - 2
-                                                            ? "bottom-10"
-                                                            : "top-10"
+                                                    ${index >= filteredIncidents.length - 2
+                                                        ? "bottom-10"
+                                                        : "top-10"
                                                     }
                                                 `}
                                             >
@@ -1391,58 +1393,12 @@ function Incidents() {
                         incidents
                     </p>
 
-                    <div className="flex items-center gap-1.5">
-                        <button
-                            type="button"
-                            className="
-                                flex h-7 min-w-7
-                                items-center justify-center
-                                rounded-[4px]
-                                border border-cyan-400/30
-                                bg-cyan-400/[0.08]
-                                px-2
-                                text-[9px] font-medium
-                                text-cyan-400
-                            "
-                        >
-                            1
-                        </button>
-
-                        <button
-                            type="button"
-                            className="pagination-btn"
-                        >
-                            2
-                        </button>
-
-                        <button
-                            type="button"
-                            className="pagination-btn"
-                        >
-                            3
-                        </button>
-
-                        <button
-                            type="button"
-                            className="
-                                ml-1 flex h-7
-                                items-center justify-center
-                                gap-1
-                                rounded-[4px]
-                                border border-[#173149]
-                                bg-[#071827]
-                                px-2.5
-                                text-[9px] font-medium
-                                text-slate-400
-                                transition
-                                hover:border-[#28506d]
-                                hover:bg-[#0c2031]
-                                hover:text-cyan-300
-                            "
-                        >
-                            Next
-                            <ArrowUpRight size={11} />
-                        </button>
+                    <div className="flex items-center">
+                        {filteredIncidents.length > 0 && (
+                            <span className="rounded-[4px] border border-cyan-400/30 bg-cyan-400/[0.08] px-2.5 py-1.5 text-[9px] font-medium text-cyan-400">
+                                1
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1587,27 +1543,6 @@ function Incidents() {
                     font-weight: 600;
                     letter-spacing: 0.13em;
                     color: #475569;
-                }
-
-                .pagination-btn {
-                    display: flex;
-                    height: 27px;
-                    min-width: 27px;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 4px;
-                    border: 1px solid #173149;
-                    background: #071827;
-                    padding: 0 8px;
-                    font-size: 9px;
-                    color: #64748b;
-                    transition: all 150ms ease;
-                }
-
-                .pagination-btn:hover {
-                    border-color: #28506d;
-                    background: #0c2031;
-                    color: #cbd5e1;
                 }
 
                 select option {
@@ -1879,7 +1814,6 @@ function Incidents() {
                     </div>
                 </div>
             )}
-
 
         </div>
     );

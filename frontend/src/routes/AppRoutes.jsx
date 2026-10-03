@@ -8,8 +8,11 @@ import ResetPassword from "../pages/auth/ResetPassword";
 import Dashboard from "../pages/admin/Dashboard";
 import Incidents from "../pages/admin/Incidents";
 import Reports from "../pages/admin/Reports";
+import Citizens from "../pages/admin/Citizens";
 import FieldOfficers from "../pages/admin/FieldOfficers";
 import EmergencyResources from "../pages/admin/EmergencyResources";
+import Communication from "../pages/admin/Communication";
+import Analytics from "../pages/admin/Analytics";
 import Profile from "../pages/admin/Profile";
 
 import CitizenDashboard from "../pages/citizen/Dashboard";
@@ -26,10 +29,9 @@ function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
-
                 {/* =========================================
-                            AUTH ROUTES
-                    ========================================== */}
+                    AUTH ROUTES
+                ========================================== */}
 
                 <Route
                     path="/"
@@ -56,10 +58,9 @@ function AppRoutes() {
                     element={<ResetPassword />}
                 />
 
-
                 {/* =========================================
-                            ADMIN ROUTES
-                    ========================================== */}
+                    ADMIN ROUTES
+                ========================================== */}
 
                 <Route
                     element={
@@ -69,7 +70,6 @@ function AppRoutes() {
                     }
                 >
                     <Route element={<DashboardLayout />}>
-
                         <Route
                             path="/admin/dashboard"
                             element={<Dashboard />}
@@ -86,6 +86,11 @@ function AppRoutes() {
                         />
 
                         <Route
+                            path="/admin/citizens"
+                            element={<Citizens />}
+                        />
+
+                        <Route
                             path="/admin/field-officers"
                             element={<FieldOfficers />}
                         />
@@ -96,17 +101,25 @@ function AppRoutes() {
                         />
 
                         <Route
+                            path="/admin/communication"
+                            element={<Communication />}
+                        />
+
+                        <Route
+                            path="/admin/analytics"
+                            element={<Analytics />}
+                        />
+
+                        <Route
                             path="/admin/profile"
                             element={<Profile />}
                         />
-
                     </Route>
                 </Route>
 
-
                 {/* =========================================
-                            CITIZEN ROUTES
-                    ========================================== */}
+                    CITIZEN ROUTES
+                ========================================== */}
 
                 <Route
                     element={
@@ -116,7 +129,6 @@ function AppRoutes() {
                     }
                 >
                     <Route element={<DashboardLayout />}>
-
                         <Route
                             path="/citizen/dashboard"
                             element={<CitizenDashboard />}
@@ -146,14 +158,12 @@ function AppRoutes() {
                             path="/citizen/emergency-contacts"
                             element={<EmergencyContacts />}
                         />
-
                     </Route>
                 </Route>
 
-
                 {/* =========================================
-                        FIELD OFFICER ROUTES
-                    ========================================== */}
+                    FIELD OFFICER ROUTES
+                ========================================== */}
 
                 <Route
                     element={
@@ -163,7 +173,6 @@ function AppRoutes() {
                     }
                 >
                     <Route element={<DashboardLayout />}>
-
                         <Route
                             path="/field-officer/dashboard"
                             element={
@@ -172,14 +181,12 @@ function AppRoutes() {
                                 </div>
                             }
                         />
-
                     </Route>
                 </Route>
 
-
                 {/* =========================================
                     DEPARTMENT OFFICER ROUTES
-                    ========================================== */}
+                ========================================== */}
 
                 <Route
                     element={
@@ -189,7 +196,6 @@ function AppRoutes() {
                     }
                 >
                     <Route element={<DashboardLayout />}>
-
                         <Route
                             path="/department/dashboard"
                             element={
@@ -198,10 +204,8 @@ function AppRoutes() {
                                 </div>
                             }
                         />
-
                     </Route>
                 </Route>
-
             </Routes>
         </BrowserRouter>
     );

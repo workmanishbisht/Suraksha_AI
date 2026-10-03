@@ -19,7 +19,9 @@ const reverseGeocode = async (latitude, longitude) => {
     });
 
     if (!response.ok) {
-        throw new Error("Unable to detect location name");
+        throw new Error(
+            "Unable to detect location name"
+        );
     }
 
     const data = await response.json();
@@ -45,12 +47,15 @@ const reverseGeocode = async (latitude, longitude) => {
 
 const searchLocation = async (req, res) => {
     try {
-        const query = String(req.query.q || "").trim();
+        const query = String(
+            req.query.q || ""
+        ).trim();
 
         if (query.length < 2) {
             return res.status(400).json({
                 success: false,
-                message: "Enter at least 2 characters to search",
+                message:
+                    "Enter at least 2 characters to search",
             });
         }
 
@@ -68,12 +73,16 @@ const searchLocation = async (req, res) => {
         });
 
         if (!response.ok) {
-            throw new Error("Location search failed");
+            throw new Error(
+                "Location search failed"
+            );
         }
 
         const data = await response.json();
 
-        const locations = (data?.results || []).map((item) => ({
+        const locations = (
+            data?.results || []
+        ).map((item) => ({
             name: item.name || "",
             state: item.admin1 || "",
             country: item.country || "",
@@ -86,11 +95,15 @@ const searchLocation = async (req, res) => {
             locations,
         });
     } catch (error) {
-        console.error("Location Search Error:", error.message);
+        console.error(
+            "Location Search Error:",
+            error.message
+        );
 
         return res.status(502).json({
             success: false,
-            message: "Unable to search locations",
+            message:
+                "Unable to search locations",
         });
     }
 };
@@ -101,18 +114,25 @@ const searchLocation = async (req, res) => {
 
 const getMyLocation = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select("location");
+        const user = await User.findById(
+            req.user._id
+        ).select("location");
 
         return res.status(200).json({
             success: true,
-            location: user?.location || null,
+            location:
+                user?.location || null,
         });
     } catch (error) {
-        console.error("Get Location Error:", error.message);
+        console.error(
+            "Get Location Error:",
+            error.message
+        );
 
         return res.status(500).json({
             success: false,
-            message: "Unable to fetch saved location",
+            message:
+                "Unable to fetch saved location",
         });
     }
 };
@@ -140,7 +160,8 @@ const saveLocation = async (req, res) => {
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Location name, latitude and longitude are required",
+                message:
+                    "Location name, latitude and longitude are required",
             });
         }
 
@@ -152,48 +173,59 @@ const saveLocation = async (req, res) => {
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid coordinates",
+                message:
+                    "Invalid coordinates",
             });
         }
 
         const safeSource =
-            source === "detected" ? "detected" : "manual";
+            source === "detected"
+                ? "detected"
+                : "manual";
 
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            {
-                location: {
-                    name: name.trim(),
-                    state:
-                        typeof state === "string"
-                            ? state.trim()
-                            : "",
-                    country:
-                        typeof country === "string"
-                            ? country.trim()
-                            : "",
-                    latitude,
-                    longitude,
-                    source: safeSource,
+        const user =
+            await User.findByIdAndUpdate(
+                req.user._id,
+                {
+                    location: {
+                        name: name.trim(),
+                        state:
+                            typeof state ===
+                                "string"
+                                ? state.trim()
+                                : "",
+                        country:
+                            typeof country ===
+                                "string"
+                                ? country.trim()
+                                : "",
+                        latitude,
+                        longitude,
+                        source: safeSource,
+                    },
                 },
-            },
-            {
-                new: true,
-                runValidators: true,
-            }
-        ).select("location");
+                {
+                    returnDocument: "after",
+                    runValidators: true,
+                }
+            ).select("location");
 
         return res.status(200).json({
             success: true,
-            message: "Location saved successfully",
+            message:
+                "Location saved successfully",
             location: user.location,
         });
     } catch (error) {
-        console.error("Save Location Error:", error.message);
+        console.error(
+            "Save Location Error:",
+            error.message
+        );
 
         return res.status(500).json({
             success: false,
-            message: "Unable to save location",
+            message:
+                "Unable to save location",
         });
     }
 };
@@ -204,7 +236,10 @@ const saveLocation = async (req, res) => {
 
 const detectLocation = async (req, res) => {
     try {
-        const { latitude, longitude } = req.body;
+        const {
+            latitude,
+            longitude,
+        } = req.body;
 
         if (
             typeof latitude !== "number" ||
@@ -216,34 +251,38 @@ const detectLocation = async (req, res) => {
         ) {
             return res.status(400).json({
                 success: false,
-                message: "Valid latitude and longitude are required",
+                message:
+                    "Valid latitude and longitude are required",
             });
         }
 
-        const place = await reverseGeocode(
-            latitude,
-            longitude
-        );
+        const place =
+            await reverseGeocode(
+                latitude,
+                longitude
+            );
 
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            {
-                location: {
-                    ...place,
-                    latitude,
-                    longitude,
-                    source: "detected",
+        const user =
+            await User.findByIdAndUpdate(
+                req.user._id,
+                {
+                    location: {
+                        ...place,
+                        latitude,
+                        longitude,
+                        source: "detected",
+                    },
                 },
-            },
-            {
-                new: true,
-                runValidators: true,
-            }
-        ).select("location");
+                {
+                    returnDocument: "after",
+                    runValidators: true,
+                }
+            ).select("location");
 
         return res.status(200).json({
             success: true,
-            message: "Current location detected and saved",
+            message:
+                "Current location detected and saved",
             location: user.location,
         });
     } catch (error) {
@@ -254,7 +293,8 @@ const detectLocation = async (req, res) => {
 
         return res.status(502).json({
             success: false,
-            message: "Unable to detect your current location",
+            message:
+                "Unable to detect your current location",
         });
     }
 };

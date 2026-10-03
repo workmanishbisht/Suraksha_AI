@@ -4,7 +4,10 @@ const QRCode = require("qrcode");
 const TwoFactor = require("../models/TwoFactor");
 const User = require("../models/User");
 
-/* GET 2FA STATUS */
+/* =========================================
+   GET 2FA STATUS
+========================================= */
+
 const getTwoFactorStatus = async (req, res) => {
     try {
         const record = await TwoFactor.findOne({
@@ -25,7 +28,10 @@ const getTwoFactorStatus = async (req, res) => {
     }
 };
 
-/* SETUP 2FA */
+/* =========================================
+   SETUP 2FA
+========================================= */
+
 const setupTwoFactor = async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select(
@@ -91,7 +97,10 @@ const setupTwoFactor = async (req, res) => {
     }
 };
 
-/* VERIFY 2FA SETUP */
+/* =========================================
+   VERIFY 2FA SETUP
+========================================= */
+
 const verifyTwoFactorSetup = async (req, res) => {
     try {
         const { token } = req.body;
@@ -123,12 +132,31 @@ const verifyTwoFactorSetup = async (req, res) => {
             });
         }
 
+        const serverToken = speakeasy.totp({
+            secret: record.secret,
+            encoding: "base32",
+            step: 30,
+            digits: 6,
+            algorithm: "sha1",
+        });
+
+        console.log("=================================");
+        console.log("2FA DEBUG");
+        console.log("Server OTP:", serverToken);
+        console.log("User OTP:", String(token));
+        console.log("=================================");
+
         const verified = speakeasy.totp.verify({
             secret: record.secret,
             encoding: "base32",
             token: String(token),
-            window: 1,
+            step: 30,
+            digits: 6,
+            algorithm: "sha1",
+            window: 2,
         });
+
+        console.log("2FA Verified:", verified);
 
         if (!verified) {
             return res.status(400).json({
@@ -158,42 +186,21 @@ const verifyTwoFactorSetup = async (req, res) => {
     }
 };
 
-/* DISABLE 2FA */
+/* =========================================
+   DISABLE 2FA
+========================================= */
+
 const disableTwoFactor = async (req, res) => {
     try {
-        const { token } = req.body;
-
-        if (!token || !/^\d{6}$/.test(String(token))) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Enter your current 6-digit 2FA code.",
-            });
-        }
-
         const record = await TwoFactor.findOne({
             user: req.user._id,
         });
 
-        if (!record?.enabled) {
+        if (!record) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Two-factor authentication is not enabled.",
-            });
-        }
-
-        const verified = speakeasy.totp.verify({
-            secret: record.secret,
-            encoding: "base32",
-            token: String(token),
-            window: 1,
-        });
-
-        if (!verified) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid verification code.",
+                    "Two-factor authentication is not configured.",
             });
         }
 
@@ -216,6 +223,10 @@ const disableTwoFactor = async (req, res) => {
         });
     }
 };
+
+/* =========================================
+   EXPORTS
+========================================= */
 
 module.exports = {
     getTwoFactorStatus,

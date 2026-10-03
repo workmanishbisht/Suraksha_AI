@@ -24,6 +24,7 @@ const updateAdmin = async () => {
             12
         );
 
+        admin.name = "Suraksha AI";
         admin.username = "surakshaai_admin";
         admin.password = hashedPassword;
         admin.role = "admin";
@@ -32,6 +33,7 @@ const updateAdmin = async () => {
         await admin.save();
 
         console.log("Admin updated successfully.");
+        console.log(`Name: ${admin.name}`);
         console.log(`Username: ${admin.username}`);
         console.log(`Email: ${admin.email}`);
 

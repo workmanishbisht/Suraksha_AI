@@ -3,6 +3,7 @@ const express = require("express");
 const {
     registerUser,
     loginUser,
+    verifyTwoFactorLogin,
     getCurrentUser,
     logoutUser,
 } = require("../controllers/authController");
@@ -11,12 +12,35 @@ const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.post("/register", registerUser);
+/* REGISTER */
+router.post(
+    "/register",
+    registerUser
+);
 
-router.post("/login", loginUser);
+/* LOGIN */
+router.post(
+    "/login",
+    loginUser
+);
 
-router.get("/me", protect, getCurrentUser);
+/* VERIFY 2FA LOGIN */
+router.post(
+    "/verify-2fa",
+    verifyTwoFactorLogin
+);
 
-router.post("/logout", logoutUser);
+/* CURRENT USER */
+router.get(
+    "/me",
+    protect,
+    getCurrentUser
+);
+
+/* LOGOUT */
+router.post(
+    "/logout",
+    logoutUser
+);
 
 module.exports = router;
