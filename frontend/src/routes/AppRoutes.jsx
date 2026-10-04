@@ -13,6 +13,8 @@ import FieldOfficers from "../pages/admin/FieldOfficers";
 import EmergencyResources from "../pages/admin/EmergencyResources";
 import Communication from "../pages/admin/Communication";
 import Analytics from "../pages/admin/Analytics";
+import UsersRoles from "../pages/admin/UsersRoles";
+import SystemSettings from "../pages/admin/SystemSettings";
 import Profile from "../pages/admin/Profile";
 
 import CitizenDashboard from "../pages/citizen/Dashboard";
@@ -111,6 +113,16 @@ function AppRoutes() {
                         />
 
                         <Route
+                            path="/admin/users"
+                            element={<UsersRoles />}
+                        />
+
+                        <Route
+                            path="/admin/settings"
+                            element={<SystemSettings />}
+                        />
+
+                        <Route
                             path="/admin/profile"
                             element={<Profile />}
                         />
@@ -191,7 +203,9 @@ function AppRoutes() {
                 <Route
                     element={
                         <ProtectedRoute
-                            allowedRoles={["department_officer"]}
+                            allowedRoles={[
+                                "department_officer",
+                            ]}
                         />
                     }
                 >
