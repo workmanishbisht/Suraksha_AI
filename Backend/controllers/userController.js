@@ -1,5 +1,9 @@
 const mongoose = require("mongoose");
+
 const User = require("../models/User");
+
+const AuditLog = require("../models/AuditLog");
+
 
 /* =========================================
    GET ALL USERS
@@ -135,6 +139,7 @@ const getUsers = async (req, res) => {
     }
 };
 
+
 /* =========================================
    GET USER STATS
 ========================================= */
@@ -205,6 +210,7 @@ const getUserStats = async (
         });
     }
 };
+
 
 /* =========================================
    GET USER BY ID
@@ -278,6 +284,7 @@ const getUserById = async (
         });
     }
 };
+
 
 /* =========================================
    UPDATE USER ROLE
@@ -370,9 +377,49 @@ const updateUserRole = async (
             });
         }
 
+        // AUDIT LOG: Capture the previous role.
+        const previousRole = user.role;
+
         user.role = role;
 
         await user.save();
+
+        // AUDIT LOG: Record successful role changes.
+        if (previousRole !== role) {
+            try {
+                await AuditLog.create({
+                    actor: req.user?._id || null,
+                    actorName:
+                        req.user?.name ||
+                        req.user?.username ||
+                        "System",
+                    actorEmail:
+                        req.user?.email || "",
+                    action: "USER_ROLE_UPDATED",
+                    resource: "User",
+                    resourceId: user._id.toString(),
+                    description:
+                        `User role changed from ${previousRole} to ${role}`,
+                    status: "success",
+                    ipAddress: req.ip || "",
+                    userAgent:
+                        req.get("user-agent") || "",
+                    metadata: {
+                        targetUserId:
+                            user._id.toString(),
+                        targetUserName: user.name,
+                        targetUserEmail: user.email,
+                        previousRole,
+                        newRole: role,
+                    },
+                });
+            } catch (auditError) {
+                console.error(
+                    "User Role Audit Log Error:",
+                    auditError.message
+                );
+            }
+        }
 
         return res.status(200).json({
             success: true,
@@ -403,6 +450,7 @@ const updateUserRole = async (
         });
     }
 };
+
 
 /* =========================================
    UPDATE USER STATUS
@@ -464,9 +512,51 @@ const updateUserStatus = async (
             });
         }
 
+        // AUDIT LOG: Capture the previous status.
+        const previousStatus = user.isActive;
+
         user.isActive = isActive;
 
         await user.save();
+
+        // AUDIT LOG: Record actual status changes.
+        if (previousStatus !== isActive) {
+            try {
+                await AuditLog.create({
+                    actor: req.user?._id || null,
+                    actorName:
+                        req.user?.name ||
+                        req.user?.username ||
+                        "System",
+                    actorEmail:
+                        req.user?.email || "",
+                    action: isActive
+                        ? "USER_ACTIVATED"
+                        : "USER_DEACTIVATED",
+                    resource: "User",
+                    resourceId: user._id.toString(),
+                    description:
+                        `User ${isActive ? "activated" : "deactivated"}: ${user.name || user.email}`,
+                    status: "success",
+                    ipAddress: req.ip || "",
+                    userAgent:
+                        req.get("user-agent") || "",
+                    metadata: {
+                        targetUserId:
+                            user._id.toString(),
+                        targetUserName: user.name,
+                        targetUserEmail: user.email,
+                        previousStatus,
+                        newStatus: isActive,
+                    },
+                });
+            } catch (auditError) {
+                console.error(
+                    "User Status Audit Log Error:",
+                    auditError.message
+                );
+            }
+        }
 
         return res.status(200).json({
             success: true,
@@ -498,6 +588,7 @@ const updateUserStatus = async (
         });
     }
 };
+
 
 /* =========================================
    DELETE USER
@@ -558,6 +649,40 @@ const deleteUser = async (
 
         await User.findByIdAndDelete(id);
 
+        // AUDIT LOG: Record the deleted user's details.
+        try {
+            await AuditLog.create({
+                actor: req.user?._id || null,
+                actorName:
+                    req.user?.name ||
+                    req.user?.username ||
+                    "System",
+                actorEmail:
+                    req.user?.email || "",
+                action: "USER_DELETED",
+                resource: "User",
+                resourceId: user._id.toString(),
+                description:
+                    `User deleted: ${user.name || user.email}`,
+                status: "success",
+                ipAddress: req.ip || "",
+                userAgent:
+                    req.get("user-agent") || "",
+                metadata: {
+                    targetUserId:
+                        user._id.toString(),
+                    targetUserName: user.name,
+                    targetUserEmail: user.email,
+                    targetUserRole: user.role,
+                },
+            });
+        } catch (auditError) {
+            console.error(
+                "User Delete Audit Log Error:",
+                auditError.message
+            );
+        }
+
         return res.status(200).json({
             success: true,
             message:
@@ -576,6 +701,7 @@ const deleteUser = async (
         });
     }
 };
+
 
 module.exports = {
     getUsers,

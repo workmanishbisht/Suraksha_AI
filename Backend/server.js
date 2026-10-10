@@ -1,3 +1,4 @@
+
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -20,6 +21,7 @@ const announcementRoutes = require("./routes/announcementRoutes");
 const userRoutes = require("./routes/userRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const permissionRoutes = require("./routes/permissionRoutes");
+const auditRoutes = require("./routes/auditRoutes");
 
 dotenv.config();
 
@@ -76,12 +78,18 @@ app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/announcements", announcementRoutes);
 
 /* =========================================
-   USERS & ROLES
+   USERS, ROLES & PERMISSIONS
 ========================================= */
 
 app.use("/api/users", userRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/permissions", permissionRoutes);
+
+/* =========================================
+   AUDIT LOGS
+========================================= */
+
+app.use("/api/audit-logs", auditRoutes);
 
 /* =========================================
    404 HANDLER
@@ -101,11 +109,13 @@ app.use((req, res) => {
 app.use((error, req, res, next) => {
     console.error("Server Error:", error);
 
+    if (res.headersSent) {
+        return next(error);
+    }
+
     res.status(error.statusCode || 500).json({
         success: false,
-        message:
-            error.message ||
-            "Internal server error",
+        message: error.message || "Internal server error",
     });
 });
 

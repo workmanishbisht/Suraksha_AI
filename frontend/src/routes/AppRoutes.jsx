@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -13,7 +14,9 @@ import FieldOfficers from "../pages/admin/FieldOfficers";
 import EmergencyResources from "../pages/admin/EmergencyResources";
 import Communication from "../pages/admin/Communication";
 import Analytics from "../pages/admin/Analytics";
-import UsersRoles from "../pages/admin/UsersRoles";
+import Users from "../pages/admin/Users";
+import RolesPermissions from "../pages/admin/RolesPermissions";
+import AuditLogs from "../pages/admin/AuditLogs";
 import SystemSettings from "../pages/admin/SystemSettings";
 import Profile from "../pages/admin/Profile";
 
@@ -31,44 +34,25 @@ function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* =========================================
-                    AUTH ROUTES
-                ========================================== */}
+                {/* AUTH ROUTES */}
 
-                <Route
-                    path="/"
-                    element={<Login />}
-                />
-
-                <Route
-                    path="/login"
-                    element={<Login />}
-                />
-
-                <Route
-                    path="/register"
-                    element={<Register />}
-                />
-
+                <Route path="/" element={<Login />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 <Route
                     path="/forgot-password"
                     element={<ForgotPassword />}
                 />
-
                 <Route
                     path="/reset-password"
                     element={<ResetPassword />}
                 />
 
-                {/* =========================================
-                    ADMIN ROUTES
-                ========================================== */}
+                {/* ADMIN ROUTES */}
 
                 <Route
                     element={
-                        <ProtectedRoute
-                            allowedRoles={["admin"]}
-                        />
+                        <ProtectedRoute allowedRoles={["admin"]} />
                     }
                 >
                     <Route element={<DashboardLayout />}>
@@ -112,11 +96,36 @@ function AppRoutes() {
                             element={<Analytics />}
                         />
 
+                        {/* Administration - Users */}
                         <Route
-                            path="/admin/users"
-                            element={<UsersRoles />}
+                            path="/admin/administration/users"
+                            element={<Users />}
                         />
 
+                        {/* Redirect old Users URL */}
+                        <Route
+                            path="/admin/users"
+                            element={
+                                <Navigate
+                                    to="/admin/administration/users"
+                                    replace
+                                />
+                            }
+                        />
+
+                        {/* Administration - Roles & Permissions */}
+                        <Route
+                            path="/admin/administration/roles-permissions"
+                            element={<RolesPermissions />}
+                        />
+
+                        {/* Administration - Audit Logs */}
+                        <Route
+                            path="/admin/audit-logs"
+                            element={<AuditLogs />}
+                        />
+
+                        {/* System Settings remains separate */}
                         <Route
                             path="/admin/settings"
                             element={<SystemSettings />}
@@ -129,15 +138,11 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
-                {/* =========================================
-                    CITIZEN ROUTES
-                ========================================== */}
+                {/* CITIZEN ROUTES */}
 
                 <Route
                     element={
-                        <ProtectedRoute
-                            allowedRoles={["citizen"]}
-                        />
+                        <ProtectedRoute allowedRoles={["citizen"]} />
                     }
                 >
                     <Route element={<DashboardLayout />}>
@@ -173,9 +178,7 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
-                {/* =========================================
-                    FIELD OFFICER ROUTES
-                ========================================== */}
+                {/* FIELD OFFICER ROUTES */}
 
                 <Route
                     element={
@@ -196,16 +199,12 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
-                {/* =========================================
-                    DEPARTMENT OFFICER ROUTES
-                ========================================== */}
+                {/* DEPARTMENT OFFICER ROUTES */}
 
                 <Route
                     element={
                         <ProtectedRoute
-                            allowedRoles={[
-                                "department_officer",
-                            ]}
+                            allowedRoles={["department_officer"]}
                         />
                     }
                 >

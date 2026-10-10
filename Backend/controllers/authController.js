@@ -7,6 +7,7 @@ const TwoFactor = require("../models/TwoFactor");
 /* =========================================
    REGISTER USER
 ========================================= */
+
 const registerUser = async (req, res) => {
     try {
         const {
@@ -16,6 +17,7 @@ const registerUser = async (req, res) => {
             password,
             accountType,
         } = req.body;
+
         if (
             !name ||
             !username ||
@@ -28,18 +30,22 @@ const registerUser = async (req, res) => {
                 message: "All fields are required",
             });
         }
+
         const roleMap = {
             Citizen: "citizen",
             "Field Officer": "field_officer",
             "Department Officer": "department_officer",
         };
+
         const role = roleMap[accountType];
+
         if (!role) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid account type",
             });
         }
+
         const existingUser = await User.findOne({
             $or: [
                 {
@@ -54,17 +60,19 @@ const registerUser = async (req, res) => {
                 },
             ],
         });
+
         if (existingUser) {
             return res.status(409).json({
                 success: false,
-                message:
-                    "Username or email already exists",
+                message: "Username or email already exists",
             });
         }
+
         const hashedPassword = await bcrypt.hash(
             password,
             12
         );
+
         const user = await User.create({
             name: name.trim(),
             username: username
@@ -77,6 +85,7 @@ const registerUser = async (req, res) => {
             role,
             isActive: true,
         });
+
         return res.status(201).json({
             success: true,
             message: "Account created successfully",
@@ -94,6 +103,7 @@ const registerUser = async (req, res) => {
             "Register Error:",
             error.message
         );
+
         return res.status(500).json({
             success: false,
             message:
@@ -105,6 +115,7 @@ const registerUser = async (req, res) => {
 /* =========================================
    CREATE LOGIN TOKEN
 ========================================= */
+
 const createLoginToken = (user) => {
     return jwt.sign(
         {
@@ -123,6 +134,7 @@ const createLoginToken = (user) => {
 /* =========================================
    SET LOGIN COOKIE
 ========================================= */
+
 const setLoginCookie = (res, token) => {
     res.cookie("token", token, {
         httpOnly: true,
@@ -139,12 +151,14 @@ const setLoginCookie = (res, token) => {
 /* =========================================
    LOGIN USER
 ========================================= */
+
 const loginUser = async (req, res) => {
     try {
         const {
             username,
             password,
         } = req.body;
+
         if (!username || !password) {
             return res.status(400).json({
                 success: false,
@@ -152,9 +166,11 @@ const loginUser = async (req, res) => {
                     "Username/email and password are required",
             });
         }
+
         const loginValue = username
             .toLowerCase()
             .trim();
+
         const user = await User.findOne({
             $or: [
                 {
@@ -165,6 +181,7 @@ const loginUser = async (req, res) => {
                 },
             ],
         });
+
         if (!user) {
             return res.status(401).json({
                 success: false,
@@ -172,6 +189,7 @@ const loginUser = async (req, res) => {
                     "Invalid username/email or password",
             });
         }
+
         if (!user.isActive) {
             return res.status(403).json({
                 success: false,
@@ -179,11 +197,13 @@ const loginUser = async (req, res) => {
                     "Your account has been deactivated",
             });
         }
+
         const isPasswordValid =
             await bcrypt.compare(
                 password,
                 user.password
             );
+
         if (!isPasswordValid) {
             return res.status(401).json({
                 success: false,
@@ -195,6 +215,7 @@ const loginUser = async (req, res) => {
         /* =========================================
            CHECK 2FA
         ========================================== */
+
         const twoFactor =
             await TwoFactor.findOne({
                 user: user._id,
@@ -204,6 +225,7 @@ const loginUser = async (req, res) => {
         /* =========================================
            2FA ENABLED
         ========================================== */
+
         if (twoFactor) {
             const challengeToken = jwt.sign(
                 {
@@ -215,6 +237,7 @@ const loginUser = async (req, res) => {
                     expiresIn: "5m",
                 }
             );
+
             return res.status(200).json({
                 success: true,
                 requiresTwoFactor: true,
@@ -227,7 +250,8 @@ const loginUser = async (req, res) => {
                     username: user.username,
                     email: user.email,
                     role: user.role,
-                    profileImage: user.profileImage || null,
+                    profileImage:
+                        user.profileImage || null,
                 },
             });
         }
@@ -235,11 +259,14 @@ const loginUser = async (req, res) => {
         /* =========================================
            NORMAL LOGIN
         ========================================== */
+
         const token = createLoginToken(user);
+
         setLoginCookie(
             res,
             token
         );
+
         return res.status(200).json({
             success: true,
             requiresTwoFactor: false,
@@ -250,7 +277,8 @@ const loginUser = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                profileImage: user.profileImage || null,
+                profileImage:
+                    user.profileImage || null,
             },
         });
     } catch (error) {
@@ -258,6 +286,7 @@ const loginUser = async (req, res) => {
             "Login Error:",
             error.message
         );
+
         return res.status(500).json({
             success: false,
             message:
@@ -269,6 +298,7 @@ const loginUser = async (req, res) => {
 /* =========================================
    VERIFY 2FA DURING LOGIN
 ========================================= */
+
 const verifyTwoFactorLogin = async (req, res) => {
     try {
         const {
@@ -279,6 +309,7 @@ const verifyTwoFactorLogin = async (req, res) => {
         /* =========================================
            VALIDATE INPUT
         ========================================== */
+
         if (!challengeToken || !token) {
             return res.status(400).json({
                 success: false,
@@ -286,6 +317,7 @@ const verifyTwoFactorLogin = async (req, res) => {
                     "2FA challenge and verification code are required",
             });
         }
+
         if (!/^\d{6}$/.test(String(token))) {
             return res.status(400).json({
                 success: false,
@@ -297,7 +329,9 @@ const verifyTwoFactorLogin = async (req, res) => {
         /* =========================================
            VERIFY LOGIN CHALLENGE
         ========================================== */
+
         let decoded;
+
         try {
             decoded = jwt.verify(
                 challengeToken,
@@ -310,6 +344,7 @@ const verifyTwoFactorLogin = async (req, res) => {
                     "2FA session expired. Please login again.",
             });
         }
+
         if (
             decoded.type !== "2fa-login" ||
             !decoded.id
@@ -324,15 +359,18 @@ const verifyTwoFactorLogin = async (req, res) => {
         /* =========================================
            GET USER
         ========================================== */
+
         const user = await User.findById(
             decoded.id
         );
+
         if (!user) {
             return res.status(404).json({
                 success: false,
                 message: "User not found.",
             });
         }
+
         if (!user.isActive) {
             return res.status(403).json({
                 success: false,
@@ -344,11 +382,13 @@ const verifyTwoFactorLogin = async (req, res) => {
         /* =========================================
            GET ACTIVE 2FA RECORD
         ========================================== */
+
         const twoFactor =
             await TwoFactor.findOne({
                 user: user._id,
                 enabled: true,
             });
+
         if (!twoFactor) {
             return res.status(400).json({
                 success: false,
@@ -358,36 +398,9 @@ const verifyTwoFactorLogin = async (req, res) => {
         }
 
         /* =========================================
-           2FA DEBUG
-        ========================================== */
-        const serverToken = speakeasy.totp({
-            secret: twoFactor.secret,
-            encoding: "base32",
-            step: 30,
-            digits: 6,
-            algorithm: "sha1",
-        });
-        console.log("");
-        console.log("=================================");
-        console.log("        BROWSER 2FA DEBUG");
-        console.log("=================================");
-        console.log(
-            "Server OTP:",
-            serverToken
-        );
-        console.log(
-            "Received OTP:",
-            String(token)
-        );
-        console.log(
-            "Secret:",
-            twoFactor.secret
-        );
-        console.log("=================================");
-
-        /* =========================================
            VERIFY OTP
         ========================================== */
+
         const verified =
             speakeasy.totp.verify({
                 secret: twoFactor.secret,
@@ -398,12 +411,6 @@ const verifyTwoFactorLogin = async (req, res) => {
                 algorithm: "sha1",
                 window: 2,
             });
-        console.log(
-            "Browser 2FA Verified:",
-            verified
-        );
-        console.log("=================================");
-        console.log("");
 
         if (!verified) {
             return res.status(401).json({
@@ -416,12 +423,15 @@ const verifyTwoFactorLogin = async (req, res) => {
         /* =========================================
            CREATE FINAL LOGIN TOKEN
         ========================================== */
+
         const loginToken =
             createLoginToken(user);
+
         setLoginCookie(
             res,
             loginToken
         );
+
         return res.status(200).json({
             success: true,
             message: "Login successful",
@@ -432,7 +442,8 @@ const verifyTwoFactorLogin = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                profileImage: user.profileImage || null,
+                profileImage:
+                    user.profileImage || null,
             },
         });
     } catch (error) {
@@ -440,6 +451,7 @@ const verifyTwoFactorLogin = async (req, res) => {
             "2FA Login Error:",
             error.message
         );
+
         return res.status(500).json({
             success: false,
             message:
@@ -451,6 +463,7 @@ const verifyTwoFactorLogin = async (req, res) => {
 /* =========================================
    GET CURRENT USER
 ========================================= */
+
 const getCurrentUser = async (req, res) => {
     try {
         return res.status(200).json({
@@ -470,6 +483,7 @@ const getCurrentUser = async (req, res) => {
             "Get Current User Error:",
             error.message
         );
+
         return res.status(500).json({
             success: false,
             message:
@@ -481,6 +495,7 @@ const getCurrentUser = async (req, res) => {
 /* =========================================
    LOGOUT USER
 ========================================= */
+
 const logoutUser = async (req, res) => {
     try {
         res.clearCookie("token", {
@@ -492,6 +507,7 @@ const logoutUser = async (req, res) => {
                     ? "none"
                     : "lax",
         });
+
         return res.status(200).json({
             success: true,
             message: "Logout successful",
@@ -501,6 +517,7 @@ const logoutUser = async (req, res) => {
             "Logout Error:",
             error.message
         );
+
         return res.status(500).json({
             success: false,
             message:
@@ -512,6 +529,7 @@ const logoutUser = async (req, res) => {
 /* =========================================
    EXPORTS
 ========================================= */
+
 module.exports = {
     registerUser,
     loginUser,

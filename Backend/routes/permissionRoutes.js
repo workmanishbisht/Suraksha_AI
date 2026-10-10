@@ -1,4 +1,6 @@
+
 const express = require("express");
+const router = express.Router();
 
 const {
     getPermissions,
@@ -6,8 +8,6 @@ const {
 
 const { protect } = require("../middleware/authMiddleware");
 const permissionMiddleware = require("../middleware/permissionMiddleware");
-
-const router = express.Router();
 
 /* =========================================
    PERMISSION ROUTES

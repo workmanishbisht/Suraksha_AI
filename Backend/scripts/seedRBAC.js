@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 
@@ -58,7 +59,7 @@ const permissions = [
         name: "permissions.update",
         resource: "permissions",
         action: "update",
-        description: "Manage permissions",
+        description: "Manage role permissions",
     },
 ];
 
@@ -70,8 +71,11 @@ const roles = [
             "users.create",
             "users.read",
             "users.update",
+            "users.delete",
             "roles.read",
+            "roles.update",
             "permissions.read",
+            "permissions.update",
         ],
     },
     {
@@ -105,64 +109,90 @@ const seedRBAC = async () => {
         }
 
         await mongoose.connect(process.env.MONGO_URI);
-
         console.log("MongoDB connected");
 
-        const permissionMap = {};
+        const permissionMap = new Map();
 
         // Create or update permissions
         for (const permissionData of permissions) {
             const permission = await Permission.findOneAndUpdate(
                 { name: permissionData.name },
-                permissionData,
+                {
+                    $set: {
+                        resource: permissionData.resource,
+                        action: permissionData.action,
+                        description: permissionData.description,
+                    },
+                    $setOnInsert: {
+                        name: permissionData.name,
+                    },
+                },
                 {
                     new: true,
                     upsert: true,
+                    runValidators: true,
                     setDefaultsOnInsert: true,
                 }
             );
 
-            permissionMap[permission.name] = permission._id;
+            permissionMap.set(permission.name, permission._id);
         }
 
-        // Create or update roles
+        // Validate permission references before changing roles
+        for (const roleData of roles) {
+            for (const permissionName of roleData.permissions) {
+                if (!permissionMap.has(permissionName)) {
+                    throw new Error(
+                        `Permission not found: ${permissionName}`
+                    );
+                }
+            }
+        }
+
+        // Create or update role permissions
         for (const roleData of roles) {
             const permissionIds = roleData.permissions.map(
-                (permissionName) => permissionMap[permissionName]
+                (permissionName) => permissionMap.get(permissionName)
             );
 
             await Role.findOneAndUpdate(
                 { name: roleData.name },
                 {
-                    name: roleData.name,
-                    description: roleData.description,
-                    permissions: permissionIds,
+                    $set: {
+                        description: roleData.description,
+                        permissions: permissionIds,
+                    },
+                    $setOnInsert: {
+                        name: roleData.name,
+                    },
                 },
                 {
                     new: true,
                     upsert: true,
+                    runValidators: true,
                     setDefaultsOnInsert: true,
                 }
             );
+
+            console.log(
+                `Updated role: ${roleData.name} (${permissionIds.length} permissions)`
+            );
         }
 
-        console.log("RBAC seeded successfully");
-        console.log(`Permissions: ${permissions.length}`);
-        console.log(`Roles: ${roles.length}`);
-
-        console.log("\nRoles:");
-        roles.forEach((role) => {
-            console.log(`- ${role.name}`);
-        });
+        console.log("\nRBAC seeded successfully");
+        console.log(`Permissions processed: ${permissions.length}`);
+        console.log(`Roles processed: ${roles.length}`);
 
         await mongoose.connection.close();
+        console.log("MongoDB connection closed");
 
-        console.log("\nMongoDB connection closed");
         process.exit(0);
     } catch (error) {
         console.error("RBAC seed error:", error);
 
-        await mongoose.connection.close();
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close();
+        }
 
         process.exit(1);
     }
