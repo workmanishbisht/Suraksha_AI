@@ -617,26 +617,27 @@ function Header() {
         }
     };
 
-    const displayName = user?.name?.replace(/\s+Admin$/i, "") || "Manish Bisht";
+// DISPLAY NAME
+const displayName = "Suraksha AI";
 
-    const displayRole =
-        user?.role === "admin"
-            ? "Admin"
-            : user?.role === "field_officer"
-                ? "Field Officer"
-                : user?.role === "department_officer"
-                    ? "Department Officer"
-                    : "Citizen";
+const displayRole =
+    user?.role === "admin"
+        ? "Admin"
+        : user?.role === "field_officer"
+            ? "Field Officer"
+            : user?.role === "department_officer"
+                ? "Department Officer"
+                : "Citizen";
 
-    const initials = displayName
-        .split(" ")
-        .filter(Boolean)
-        .map((word) => word[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase();
+const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
-    const profileImage = user?.profileImage || null;
+const profileImage = user?.profileImage || null;
 
     const SearchResultIcon = ({ type }) => {
         if (type === "incident") {

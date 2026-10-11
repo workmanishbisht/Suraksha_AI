@@ -18,10 +18,12 @@ const reportRoutes = require("./routes/reportRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const twoFactorRoutes = require("./routes/twoFactorRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
+
 const userRoutes = require("./routes/userRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const permissionRoutes = require("./routes/permissionRoutes");
 const auditRoutes = require("./routes/auditRoutes");
+const systemSettingRoutes = require("./routes/systemSettingRoutes");
 
 dotenv.config();
 
@@ -61,20 +63,45 @@ app.get("/", (req, res) => {
 });
 
 /* =========================================
-   API ROUTES
+   AUTHENTICATION
 ========================================= */
 
 app.use("/api/auth", authRoutes);
+app.use("/api/2fa", twoFactorRoutes);
+
+/* =========================================
+   LOCATION & WEATHER
+========================================= */
+
 app.use("/api/location", locationRoutes);
 app.use("/api/weather", weatherRoutes);
+
+/* =========================================
+   INCIDENTS & ANALYTICS
+========================================= */
+
 app.use("/api/incidents", incidentRoutes);
 app.use("/api/analytics", analyticsRoutes);
+
+/* =========================================
+   CITIZENS & FIELD OFFICERS
+========================================= */
+
 app.use("/api/citizens", citizenRoutes);
 app.use("/api/field-officers", fieldOfficerRoutes);
+
+/* =========================================
+   EMERGENCY RESOURCES & REPORTS
+========================================= */
+
 app.use("/api/emergency-resources", emergencyResourceRoutes);
 app.use("/api/reports", reportRoutes);
+
+/* =========================================
+   PROFILE & COMMUNICATION
+========================================= */
+
 app.use("/api/profile", profileRoutes);
-app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/announcements", announcementRoutes);
 
 /* =========================================
@@ -90,6 +117,12 @@ app.use("/api/permissions", permissionRoutes);
 ========================================= */
 
 app.use("/api/audit-logs", auditRoutes);
+
+/* =========================================
+   SYSTEM SETTINGS
+========================================= */
+
+app.use("/api/system-settings", systemSettingRoutes);
 
 /* =========================================
    404 HANDLER

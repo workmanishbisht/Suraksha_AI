@@ -1,10 +1,23 @@
 
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+    Navigate,
+} from "react-router-dom";
+
+/* =========================================
+   AUTH PAGES
+========================================= */
 
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
+
+/* =========================================
+   ADMIN PAGES
+========================================= */
 
 import Dashboard from "../pages/admin/Dashboard";
 import Incidents from "../pages/admin/Incidents";
@@ -20,6 +33,10 @@ import AuditLogs from "../pages/admin/AuditLogs";
 import SystemSettings from "../pages/admin/SystemSettings";
 import Profile from "../pages/admin/Profile";
 
+/* =========================================
+   CITIZEN PAGES
+========================================= */
+
 import CitizenDashboard from "../pages/citizen/Dashboard";
 import ReportIncident from "../pages/citizen/ReportIncident";
 import MyReports from "../pages/citizen/MyReports";
@@ -27,28 +44,44 @@ import Alerts from "../pages/citizen/Alerts";
 import NearbyHelp from "../pages/citizen/NearbyHelp";
 import EmergencyContacts from "../pages/citizen/EmergencyContacts";
 
+/* =========================================
+   LAYOUT & AUTHENTICATION
+========================================= */
+
 import DashboardLayout from "../components/layout/DashboardLayout";
 import ProtectedRoute from "../components/common/ProtectedRoute";
+
+/* =========================================
+   APP ROUTES
+========================================= */
 
 function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* AUTH ROUTES */}
+                {/* =====================================
+                    AUTH ROUTES
+                ===================================== */}
 
                 <Route path="/" element={<Login />} />
+
                 <Route path="/login" element={<Login />} />
+
                 <Route path="/register" element={<Register />} />
+
                 <Route
                     path="/forgot-password"
                     element={<ForgotPassword />}
                 />
+
                 <Route
                     path="/reset-password"
                     element={<ResetPassword />}
                 />
 
-                {/* ADMIN ROUTES */}
+                {/* =====================================
+                    ADMIN ROUTES
+                ===================================== */}
 
                 <Route
                     element={
@@ -96,13 +129,15 @@ function AppRoutes() {
                             element={<Analytics />}
                         />
 
-                        {/* Administration - Users */}
+                        {/* Administration: Users */}
+
                         <Route
                             path="/admin/administration/users"
                             element={<Users />}
                         />
 
-                        {/* Redirect old Users URL */}
+                        {/* Legacy Users URL redirect */}
+
                         <Route
                             path="/admin/users"
                             element={
@@ -113,23 +148,28 @@ function AppRoutes() {
                             }
                         />
 
-                        {/* Administration - Roles & Permissions */}
+                        {/* Administration: Roles & Permissions */}
+
                         <Route
                             path="/admin/administration/roles-permissions"
                             element={<RolesPermissions />}
                         />
 
-                        {/* Administration - Audit Logs */}
+                        {/* Administration: Audit Logs */}
+
                         <Route
                             path="/admin/audit-logs"
                             element={<AuditLogs />}
                         />
 
-                        {/* System Settings remains separate */}
+                        {/* System Settings */}
+
                         <Route
                             path="/admin/settings"
                             element={<SystemSettings />}
                         />
+
+                        {/* Admin Profile */}
 
                         <Route
                             path="/admin/profile"
@@ -138,7 +178,9 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
-                {/* CITIZEN ROUTES */}
+                {/* =====================================
+                    CITIZEN ROUTES
+                ===================================== */}
 
                 <Route
                     element={
@@ -178,7 +220,9 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
-                {/* FIELD OFFICER ROUTES */}
+                {/* =====================================
+                    FIELD OFFICER ROUTES
+                ===================================== */}
 
                 <Route
                     element={
@@ -199,7 +243,9 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
-                {/* DEPARTMENT OFFICER ROUTES */}
+                {/* =====================================
+                    DEPARTMENT OFFICER ROUTES
+                ===================================== */}
 
                 <Route
                     element={
@@ -219,6 +265,15 @@ function AppRoutes() {
                         />
                     </Route>
                 </Route>
+
+                {/* =====================================
+                    UNKNOWN ROUTES
+                ===================================== */}
+
+                <Route
+                    path="*"
+                    element={<Navigate to="/login" replace />}
+                />
             </Routes>
         </BrowserRouter>
     );

@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 /* =========================================
@@ -46,15 +45,6 @@ const permissionSchema = new mongoose.Schema(
     {
         timestamps: true,
     }
-);
-
-/* =========================================
-   INDEXES
-========================================= */
-
-permissionSchema.index(
-    { name: 1 },
-    { unique: true }
 );
 
 /* =========================================
