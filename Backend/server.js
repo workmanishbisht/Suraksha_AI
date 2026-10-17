@@ -6,29 +6,40 @@ const cookieParser = require("cookie-parser");
 
 const connectDB = require("./config/db");
 
-const authRoutes = require("./routes/authRoutes");
-const locationRoutes = require("./routes/locationRoutes");
-const weatherRoutes = require("./routes/weatherRoutes");
-const incidentRoutes = require("./routes/incidentRoutes");
-const analyticsRoutes = require("./routes/analyticsRoutes");
-const citizenRoutes = require("./routes/citizenRoutes");
-const fieldOfficerRoutes = require("./routes/fieldOfficerRoutes");
-const emergencyResourceRoutes = require("./routes/emergencyResourceRoutes");
-const reportRoutes = require("./routes/reportRoutes");
-const profileRoutes = require("./routes/profileRoutes");
-const twoFactorRoutes = require("./routes/twoFactorRoutes");
-const announcementRoutes = require("./routes/announcementRoutes");
-
-const userRoutes = require("./routes/userRoutes");
-const roleRoutes = require("./routes/roleRoutes");
-const permissionRoutes = require("./routes/permissionRoutes");
-const auditRoutes = require("./routes/auditRoutes");
-const systemSettingRoutes = require("./routes/systemSettingRoutes");
-
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+/* =========================================
+   ROUTES
+========================================= */
+
+const authRoutes = require("./routes/authRoutes");
+const twoFactorRoutes = require("./routes/twoFactorRoutes");
+
+const locationRoutes = require("./routes/locationRoutes");
+const weatherRoutes = require("./routes/weatherRoutes");
+
+const incidentRoutes = require("./routes/incidentRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+
+const citizenRoutes = require("./routes/citizenRoutes");
+const fieldOfficerRoutes = require("./routes/fieldOfficerRoutes");
+
+const emergencyResourceRoutes = require("./routes/emergencyResourceRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+
+const profileRoutes = require("./routes/profileRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+
+const userRoutes = require("./routes/userRoutes");
+const roleRoutes = require("./routes/roleRoutes");
+const permissionRoutes = require("./routes/permissionRoutes");
+
+const auditRoutes = require("./routes/auditRoutes");
+const systemSettingRoutes = require("./routes/systemSettingRoutes");
 
 /* =========================================
    DATABASE
@@ -103,6 +114,14 @@ app.use("/api/reports", reportRoutes);
 
 app.use("/api/profile", profileRoutes);
 app.use("/api/announcements", announcementRoutes);
+
+/* =========================================
+   NOTIFICATIONS
+========================================= */
+
+// IMPORTANT: Protect these routes with your existing
+// authentication middleware before using them.
+app.use("/api/notifications", notificationRoutes);
 
 /* =========================================
    USERS, ROLES & PERMISSIONS

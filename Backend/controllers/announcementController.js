@@ -1,4 +1,11 @@
+
 const Announcement = require("../models/Announcement");
+const Notification = require("../models/Notification");
+const User = require("../models/User");
+
+/* =========================================
+   GET ALL ANNOUNCEMENTS
+========================================= */
 
 const getAnnouncements = async (req, res) => {
     try {
@@ -10,11 +17,7 @@ const getAnnouncements = async (req, res) => {
             limit = 10,
         } = req.query;
 
-        const currentPage = Math.max(
-            Number(page) || 1,
-            1
-        );
-
+        const currentPage = Math.max(Number(page) || 1, 1);
         const perPage = Math.min(
             Math.max(Number(limit) || 10, 1),
             100
@@ -31,10 +34,7 @@ const getAnnouncements = async (req, res) => {
         }
 
         if (search.trim()) {
-            const searchRegex = new RegExp(
-                search.trim(),
-                "i"
-            );
+            const searchRegex = new RegExp(search.trim(), "i");
 
             query.$or = [
                 { title: searchRegex },
@@ -42,24 +42,14 @@ const getAnnouncements = async (req, res) => {
             ];
         }
 
-        const total =
-            await Announcement.countDocuments(query);
+        const total = await Announcement.countDocuments(query);
 
-        const announcements =
-            await Announcement.find(query)
-                .populate(
-                    "createdBy",
-                    "name username email"
-                )
-                .sort({
-                    createdAt: -1,
-                })
-                .skip(
-                    (currentPage - 1) *
-                    perPage
-                )
-                .limit(perPage)
-                .lean();
+        const announcements = await Announcement.find(query)
+            .populate("createdBy", "name username email")
+            .sort({ createdAt: -1 })
+            .skip((currentPage - 1) * perPage)
+            .limit(perPage)
+            .lean();
 
         return res.status(200).json({
             success: true,
@@ -68,29 +58,24 @@ const getAnnouncements = async (req, res) => {
                 page: currentPage,
                 limit: perPage,
                 total,
-                totalPages: Math.ceil(
-                    total / perPage
-                ),
+                totalPages: Math.ceil(total / perPage),
             },
         });
     } catch (error) {
-        console.error(
-            "Get Announcements Error:",
-            error.message
-        );
+        console.error("Get Announcements Error:", error.message);
 
         return res.status(500).json({
             success: false,
-            message:
-                "Unable to fetch announcements",
+            message: "Unable to fetch announcements",
         });
     }
 };
 
-const getAnnouncementStats = async (
-    req,
-    res
-) => {
+/* =========================================
+   GET ANNOUNCEMENT STATISTICS
+========================================= */
+
+const getAnnouncementStats = async (req, res) => {
     try {
         const [
             totalMessages,
@@ -99,18 +84,9 @@ const getAnnouncementStats = async (
             criticalMessages,
         ] = await Promise.all([
             Announcement.countDocuments(),
-
-            Announcement.countDocuments({
-                status: "Sent",
-            }),
-
-            Announcement.countDocuments({
-                status: "Scheduled",
-            }),
-
-            Announcement.countDocuments({
-                priority: "Critical",
-            }),
+            Announcement.countDocuments({ status: "Sent" }),
+            Announcement.countDocuments({ status: "Scheduled" }),
+            Announcement.countDocuments({ priority: "Critical" }),
         ]);
 
         return res.status(200).json({
@@ -123,39 +99,29 @@ const getAnnouncementStats = async (
             },
         });
     } catch (error) {
-        console.error(
-            "Announcement Stats Error:",
-            error.message
-        );
+        console.error("Announcement Stats Error:", error.message);
 
         return res.status(500).json({
             success: false,
-            message:
-                "Unable to fetch communication statistics",
+            message: "Unable to fetch communication statistics",
         });
     }
 };
 
-const getAnnouncementById = async (
-    req,
-    res
-) => {
+/* =========================================
+   GET ANNOUNCEMENT BY ID
+========================================= */
+
+const getAnnouncementById = async (req, res) => {
     try {
-        const announcement =
-            await Announcement.findById(
-                req.params.id
-            )
-                .populate(
-                    "createdBy",
-                    "name username email"
-                )
-                .lean();
+        const announcement = await Announcement.findById(req.params.id)
+            .populate("createdBy", "name username email")
+            .lean();
 
         if (!announcement) {
             return res.status(404).json({
                 success: false,
-                message:
-                    "Announcement not found",
+                message: "Announcement not found",
             });
         }
 
@@ -164,23 +130,20 @@ const getAnnouncementById = async (
             announcement,
         });
     } catch (error) {
-        console.error(
-            "Get Announcement Error:",
-            error.message
-        );
+        console.error("Get Announcement Error:", error.message);
 
         return res.status(500).json({
             success: false,
-            message:
-                "Unable to fetch announcement",
+            message: "Unable to fetch announcement",
         });
     }
 };
 
-const createAnnouncement = async (
-    req,
-    res
-) => {
+/* =========================================
+   CREATE ANNOUNCEMENT
+========================================= */
+
+const createAnnouncement = async (req, res) => {
     try {
         const {
             title,
@@ -195,66 +158,102 @@ const createAnnouncement = async (
         if (!title?.trim()) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Announcement title is required",
+                message: "Announcement title is required",
             });
         }
 
         if (!message?.trim()) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Announcement message is required",
+                message: "Announcement message is required",
             });
         }
 
-        const announcement =
-            await Announcement.create({
-                title: title.trim(),
-                message: message.trim(),
-                type,
-                audience,
-                priority,
-                status,
-                scheduledAt,
-                createdBy: req.user?._id || null,
-            });
+        // Validate audience before creating the announcement.
+        const audienceRoles = {
+            "All Citizens": ["citizen"],
+            "Field Officers": ["field_officer"],
+            "Department Officers": ["department_officer"],
+            "All Users": [
+                "admin",
+                "citizen",
+                "field_officer",
+                "department_officer",
+            ],
+        };
 
-        const populatedAnnouncement =
-            await Announcement.findById(
-                announcement._id
-            )
-                .populate(
-                    "createdBy",
-                    "name username email"
-                )
+        if (!audienceRoles[audience]) {
+            return res.status(400).json({
+                success: false,
+                message: "Unsupported announcement audience",
+            });
+        }
+
+        const announcement = await Announcement.create({
+            title: title.trim(),
+            message: message.trim(),
+            type,
+            audience,
+            priority,
+            status,
+            scheduledAt,
+            createdBy: req.user?._id || null,
+        });
+
+        let notificationCount = 0;
+
+        // Generate notifications only for sent announcements.
+        if (status === "Sent") {
+            const recipients = await User.find({
+                role: { $in: audienceRoles[audience] },
+                isActive: true,
+            })
+                .select("_id")
                 .lean();
+
+            if (recipients.length > 0) {
+                const notifications = recipients.map((recipient) => ({
+                    recipient: recipient._id,
+                    title: announcement.title,
+                    message: announcement.message,
+                    type: "announcement",
+                    link: "/admin/announcements",
+                }));
+
+                const createdNotifications =
+                    await Notification.insertMany(notifications);
+
+                notificationCount = createdNotifications.length;
+            }
+        }
+
+        const populatedAnnouncement = await Announcement.findById(
+            announcement._id
+        )
+            .populate("createdBy", "name username email")
+            .lean();
 
         return res.status(201).json({
             success: true,
-            message:
-                "Announcement created successfully",
-            announcement:
-                populatedAnnouncement,
+            message: "Announcement created successfully",
+            announcement: populatedAnnouncement,
+            notificationCount,
         });
     } catch (error) {
-        console.error(
-            "Create Announcement Error:",
-            error.message
-        );
+        console.error("Create Announcement Error:", error);
 
         return res.status(500).json({
             success: false,
-            message:
-                "Unable to create announcement",
+            message: "Unable to create announcement",
         });
     }
 };
 
-const updateAnnouncement = async (
-    req,
-    res
-) => {
+/* =========================================
+   UPDATE ANNOUNCEMENT
+========================================= */
+
+const updateAnnouncement = async (req, res) => {
     try {
         const {
             title,
@@ -266,27 +265,35 @@ const updateAnnouncement = async (
             scheduledAt,
         } = req.body;
 
-        const announcement =
-            await Announcement.findById(
-                req.params.id
-            );
+        const announcement = await Announcement.findById(req.params.id);
 
         if (!announcement) {
             return res.status(404).json({
                 success: false,
-                message:
-                    "Announcement not found",
+                message: "Announcement not found",
             });
         }
 
         if (title !== undefined) {
-            announcement.title =
-                title.trim();
+            if (!title.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Announcement title cannot be empty",
+                });
+            }
+
+            announcement.title = title.trim();
         }
 
         if (message !== undefined) {
-            announcement.message =
-                message.trim();
+            if (!message.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Announcement message cannot be empty",
+                });
+            }
+
+            announcement.message = message.trim();
         }
 
         if (type !== undefined) {
@@ -298,8 +305,7 @@ const updateAnnouncement = async (
         }
 
         if (priority !== undefined) {
-            announcement.priority =
-                priority;
+            announcement.priority = priority;
         }
 
         if (status !== undefined) {
@@ -307,68 +313,60 @@ const updateAnnouncement = async (
         }
 
         if (scheduledAt !== undefined) {
-            announcement.scheduledAt =
-                scheduledAt;
+            announcement.scheduledAt = scheduledAt;
         }
 
         await announcement.save();
 
         return res.status(200).json({
             success: true,
-            message:
-                "Announcement updated successfully",
+            message: "Announcement updated successfully",
             announcement,
         });
     } catch (error) {
-        console.error(
-            "Update Announcement Error:",
-            error.message
-        );
+        console.error("Update Announcement Error:", error.message);
 
         return res.status(500).json({
             success: false,
-            message:
-                "Unable to update announcement",
+            message: "Unable to update announcement",
         });
     }
 };
 
-const deleteAnnouncement = async (
-    req,
-    res
-) => {
+/* =========================================
+   DELETE ANNOUNCEMENT
+========================================= */
+
+const deleteAnnouncement = async (req, res) => {
     try {
-        const announcement =
-            await Announcement.findByIdAndDelete(
-                req.params.id
-            );
+        const announcement = await Announcement.findByIdAndDelete(
+            req.params.id
+        );
 
         if (!announcement) {
             return res.status(404).json({
                 success: false,
-                message:
-                    "Announcement not found",
+                message: "Announcement not found",
             });
         }
 
         return res.status(200).json({
             success: true,
-            message:
-                "Announcement deleted successfully",
+            message: "Announcement deleted successfully",
         });
     } catch (error) {
-        console.error(
-            "Delete Announcement Error:",
-            error.message
-        );
+        console.error("Delete Announcement Error:", error.message);
 
         return res.status(500).json({
             success: false,
-            message:
-                "Unable to delete announcement",
+            message: "Unable to delete announcement",
         });
     }
 };
+
+/* =========================================
+   EXPORT CONTROLLERS
+========================================= */
 
 module.exports = {
     getAnnouncements,

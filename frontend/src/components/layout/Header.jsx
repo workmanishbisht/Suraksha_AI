@@ -27,6 +27,11 @@ import {
     SearchIcon,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import {
+    getNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+} from "../../services/notificationApi";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -120,6 +125,31 @@ const formatTime = (value) => {
     }).format(new Date(value));
 };
 
+const formatNotificationTime = (value) => {
+    if (!value) return "Just now";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const diffMs = Date.now() - date.getTime();
+    const minutes = Math.floor(diffMs / 60000);
+
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+
+    return date.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: date.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
+    });
+};
+
 const getSearchLabel = (item) => {
     if (item.type === "incident") {
         return item.title || item.name || "Incident";
@@ -159,7 +189,93 @@ function Header() {
 
     const [profileOpen, setProfileOpen] = useState(false);
 
+    // Notifications loaded from the authenticated backend API
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [notificationsLoading, setNotificationsLoading] = useState(false);
+    const [notificationsError, setNotificationsError] = useState("");
+    const [notificationActionLoading, setNotificationActionLoading] = useState(false);
+    const unreadCount = notifications.filter((item) => !item.isRead).length;
+
     const [loggingOut, setLoggingOut] = useState(false);
+
+    const fetchNotifications = async () => {
+        try {
+            setNotificationsLoading(true);
+            setNotificationsError("");
+
+            const data = await getNotifications();
+            setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+        } catch (error) {
+            console.error("Fetch Notifications Error:", error);
+            setNotificationsError(error.message || "Unable to load notifications.");
+        } finally {
+            setNotificationsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+    }, []);
+
+    const getNotificationDestination = () => {
+        // Always use a route allowed for the currently logged-in role.
+        // Notification links may point to an admin-only page, so don't
+        // blindly navigate to notification.link for citizen accounts.
+        switch (user?.role) {
+            case "admin":
+                return "/admin/communication";
+            case "citizen":
+                return "/citizen/alerts";
+            case "field_officer":
+                return "/field-officer/dashboard";
+            case "department_officer":
+                return "/department/dashboard";
+            default:
+                return "/login";
+        }
+    };
+
+    const handleNotificationClick = async (notification) => {
+        try {
+            if (!notification.isRead) {
+                const data = await markNotificationRead(notification._id);
+                const updatedNotification = data.notification;
+
+                setNotifications((previous) =>
+                    previous.map((item) =>
+                        item._id === notification._id
+                            ? { ...item, ...(updatedNotification || {}), isRead: true }
+                            : item
+                    )
+                );
+            }
+
+            setNotificationsOpen(false);
+            navigate(getNotificationDestination());
+        } catch (error) {
+            console.error("Mark Notification Read Error:", error);
+            toast.error(error.message || "Unable to mark notification as read.");
+        }
+    };
+
+    const handleMarkAllNotificationsRead = async () => {
+        if (unreadCount === 0 || notificationActionLoading) return;
+
+        try {
+            setNotificationActionLoading(true);
+            await markAllNotificationsRead();
+            setNotifications((previous) =>
+                previous.map((item) => ({ ...item, isRead: true }))
+            );
+            toast.success("All notifications marked as read.");
+        } catch (error) {
+            console.error("Mark All Notifications Read Error:", error);
+            toast.error(error.message || "Unable to update notifications.");
+        } finally {
+            setNotificationActionLoading(false);
+        }
+    };
 
     const [globalSearch, setGlobalSearch] = useState("");
 
@@ -981,44 +1097,116 @@ const profileImage = user?.profileImage || null;
                         <div className="hidden h-8 w-px bg-[#1b344a] lg:block" />
 
                         {/* NOTIFICATION */}
-                        <button
-                            type="button"
-                            aria-label="Notifications"
-                            className="
-                                relative
-                                flex
-                                h-[42px]
-                                w-[42px]
-                                shrink-0
-                                items-center
-                                justify-center
-                                rounded-[6px]
-                                border
-                                border-[#21415c]
-                                bg-[#0a1d2e]
-                                text-slate-300
-                                transition
-                                hover:border-cyan-500/40
-                                hover:bg-cyan-500/5
-                                hover:text-white
-                            "
-                        >
-                            <Bell size={18} />
-
-                            <span
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const nextOpen = !notificationsOpen;
+                                    setNotificationsOpen(nextOpen);
+                                    if (nextOpen) fetchNotifications();
+                                }}
+                                aria-label="Notifications"
+                                aria-expanded={notificationsOpen}
                                 className="
-                                    absolute
-                                    right-2
-                                    top-2
-                                    h-1.5
-                                    w-1.5
-                                    rounded-full
-                                    bg-red-500
-                                    ring-2
-                                    ring-[#0a1d2e]
+                                    relative flex h-[42px] w-[42px] shrink-0 items-center justify-center
+                                    rounded-[6px] border border-[#21415c] bg-[#0a1d2e] text-slate-300
+                                    transition hover:border-cyan-500/40 hover:bg-cyan-500/5 hover:text-white
                                 "
-                            />
-                        </button>
+                            >
+                                <Bell size={18} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-[#0a1d2e]">
+                                        {unreadCount > 99 ? "99+" : unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {notificationsOpen && (
+                                <div className="absolute right-0 top-[50px] z-[150] w-[min(340px,calc(100vw-24px))] overflow-hidden rounded-[7px] border border-[#1c3a52] bg-[#081a2b] shadow-[0_18px_45px_rgba(0,0,0,0.45)]">
+                                    <div className="flex items-center justify-between border-b border-[#173149] px-4 py-3">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-white">Notifications</h3>
+                                            <p className="mt-1 text-[10px] text-slate-500">
+                                                {unreadCount} unread notifications
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={fetchNotifications}
+                                                disabled={notificationsLoading}
+                                                aria-label="Refresh notifications"
+                                                className="text-slate-500 transition hover:text-cyan-400 disabled:opacity-50"
+                                            >
+                                                <RefreshCw size={13} className={notificationsLoading ? "animate-spin" : ""} />
+                                            </button>
+                                            {unreadCount > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleMarkAllNotificationsRead}
+                                                    disabled={notificationActionLoading}
+                                                    className="text-[10px] font-medium text-cyan-400 transition hover:text-cyan-300 disabled:opacity-50"
+                                                >
+                                                    {notificationActionLoading ? "Updating..." : "Mark all read"}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="max-h-[320px] overflow-y-auto p-2">
+                                        {notificationsLoading && notifications.length === 0 ? (
+                                            <div className="flex items-center justify-center gap-2 px-3 py-8 text-xs text-slate-500">
+                                                <RefreshCw size={14} className="animate-spin text-cyan-400" />
+                                                Loading notifications...
+                                            </div>
+                                        ) : notificationsError && notifications.length === 0 ? (
+                                            <div className="px-3 py-8 text-center">
+                                                <p className="text-xs text-red-400">{notificationsError}</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={fetchNotifications}
+                                                    className="mt-3 text-[10px] font-medium text-cyan-400 hover:text-cyan-300"
+                                                >
+                                                    Try again
+                                                </button>
+                                            </div>
+                                        ) : notifications.length === 0 ? (
+                                            <div className="px-3 py-8 text-center">
+                                                <Bell size={20} className="mx-auto mb-2 text-slate-600" />
+                                                <p className="text-xs text-slate-500">No notifications yet.</p>
+                                            </div>
+                                        ) : (
+                                            notifications.map((item) => {
+                                                const isUnread = !item.isRead;
+                                                return (
+                                                    <button
+                                                        key={item._id}
+                                                        type="button"
+                                                        onClick={() => handleNotificationClick(item)}
+                                                        className={`flex w-full gap-3 rounded-[5px] p-3 text-left transition hover:bg-white/[0.04] ${isUnread ? "bg-cyan-500/[0.05]" : ""}`}
+                                                    >
+                                                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[5px] border border-[#21415c] bg-[#0a1d2e]">
+                                                            <Bell size={14} className={isUnread ? "text-cyan-400" : "text-slate-500"} />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="flex items-center justify-between gap-2">
+                                                                <span className="truncate text-[11px] font-medium text-slate-200">{item.title}</span>
+                                                                {isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" />}
+                                                            </span>
+                                                            <span className="mt-1 block text-[10px] leading-4 text-slate-400">{item.message}</span>
+                                                            <span className="mt-2 block text-[9px] text-slate-600">{formatNotificationTime(item.createdAt)}</span>
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                    <div className="border-t border-[#173149] px-4 py-3">
+                                        <p className="text-center text-[9px] text-slate-600">Notifications are synced with SurakshaAI.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* PROFILE */}
                         <div className="relative">

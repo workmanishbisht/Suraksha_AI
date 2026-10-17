@@ -1,3 +1,4 @@
+
 const express = require("express");
 
 const {
@@ -11,21 +12,21 @@ const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 
 /* =========================================
-   PROFILE
+   GET PROFILE
 ========================================= */
 
 router.get("/", protect, getProfile);
 
+/* =========================================
+   UPDATE PROFILE
+========================================= */
+
 router.put("/", protect, updateProfile);
 
 /* =========================================
-   PASSWORD
+   CHANGE PASSWORD
 ========================================= */
 
-router.post(
-    "/change-password",
-    protect,
-    changePassword
-);
+router.post("/change-password", protect, changePassword);
 
 module.exports = router;

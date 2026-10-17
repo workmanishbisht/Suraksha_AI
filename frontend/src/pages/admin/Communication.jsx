@@ -560,7 +560,7 @@ function Communication() {
     };
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-4">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                     <div className="mb-2 flex items-center gap-2">
@@ -571,11 +571,11 @@ function Communication() {
                         </span>
                     </div>
 
-                    <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+                    <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
                         Communication
                     </h1>
 
-                    <p className="mt-1 text-sm text-[var(--text-muted)]">
+                    <p className="mt-1 text-[13px] leading-5 text-[var(--text-muted)]">
                         Create and manage emergency alerts,
                         announcements, and citizen
                         notifications.
@@ -588,14 +588,14 @@ function Communication() {
                         setForm(initialForm);
                         setShowCreateModal(true);
                     }}
-                    className="flex h-10 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)]"
+                    className="flex h-9 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-3.5 text-[13px] font-medium text-white transition hover:bg-[var(--primary-hover)]"
                 >
                     <Plus className="h-4 w-4" />
                     New Announcement
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                     icon={Megaphone}
                     label="Total Messages"
@@ -645,7 +645,7 @@ function Communication() {
                 />
             </div>
 
-            <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-4">
+            <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-3.5">
                 <div className="flex flex-col gap-3 lg:flex-row">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -657,7 +657,7 @@ function Communication() {
                                 setSearch(e.target.value)
                             }
                             placeholder="Search announcements..."
-                            className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] pl-10 pr-4 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
+                            className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] pl-10 pr-3 text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
                         />
                     </div>
 
@@ -666,7 +666,7 @@ function Communication() {
                         onChange={(e) =>
                             setTypeFilter(e.target.value)
                         }
-                        className="h-10 min-w-[150px] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 text-sm text-[var(--text-secondary)] outline-none focus:border-[var(--primary)]"
+                        className="h-9 min-w-[140px] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 text-[13px] text-[var(--text-secondary)] outline-none focus:border-[var(--primary)]"
                     >
                         <option value="All">
                             All Types
@@ -690,7 +690,7 @@ function Communication() {
                         onChange={(e) =>
                             setStatusFilter(e.target.value)
                         }
-                        className="h-10 min-w-[150px] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 text-sm text-[var(--text-secondary)] outline-none focus:border-[var(--primary)]"
+                        className="h-9 min-w-[140px] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 text-[13px] text-[var(--text-secondary)] outline-none focus:border-[var(--primary)]"
                     >
                         <option value="All">
                             All Status
@@ -707,30 +707,30 @@ function Communication() {
 
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)]">
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[900px]">
+                    <table className="w-full min-w-[860px]">
                         <thead>
                             <tr className="border-b border-[var(--border)] bg-[var(--background)]">
-                                <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                                     Announcement
                                 </th>
 
-                                <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                                     Type
                                 </th>
 
-                                <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                                     Audience
                                 </th>
 
-                                <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                                     Priority
                                 </th>
 
-                                <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                                     Status
                                 </th>
 
-                                <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                                     Date
                                 </th>
                             </tr>
@@ -766,7 +766,7 @@ function Communication() {
                                             }
                                             className="cursor-pointer border-b border-[var(--border)] last:border-b-0 transition hover:bg-[var(--surface-hover)]"
                                         >
-                                            <td className="px-5 py-4">
+                                            <td className="px-4 py-3.5">
                                                 <div className="flex items-start gap-3">
                                                     <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--primary)]/10">
                                                         <Bell className="h-4 w-4 text-[var(--primary-light)]" />
@@ -779,7 +779,7 @@ function Communication() {
                                                             }
                                                         </p>
 
-                                                        <p className="mt-1 max-w-[330px] truncate text-xs text-[var(--text-muted)]">
+                                                        <p className="mt-1 max-w-[330px] truncate text-xs leading-4 text-[var(--text-muted)]">
                                                             {
                                                                 announcement.message
                                                             }
@@ -788,14 +788,14 @@ function Communication() {
                                                 </div>
                                             </td>
 
-                                            <td className="px-5 py-4 text-sm text-[var(--text-secondary)]">
+                                            <td className="px-4 py-3.5 text-[13px] text-[var(--text-secondary)]">
                                                 {
                                                     announcement.type
                                                 }
                                             </td>
 
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                                            <td className="px-4 py-3.5">
+                                                <div className="flex items-center gap-2 text-[13px] text-[var(--text-secondary)]">
                                                     <Users className="h-4 w-4 text-[var(--text-muted)]" />
                                                     {
                                                         announcement.audience
@@ -803,7 +803,7 @@ function Communication() {
                                                 </div>
                                             </td>
 
-                                            <td className="px-5 py-4">
+                                            <td className="px-4 py-3.5">
                                                 <span
                                                     className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${getPriorityClass(
                                                         announcement.priority
@@ -815,7 +815,7 @@ function Communication() {
                                                 </span>
                                             </td>
 
-                                            <td className="px-5 py-4">
+                                            <td className="px-4 py-3.5">
                                                 <span
                                                     className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${getStatusClass(
                                                         announcement.status
@@ -834,7 +834,7 @@ function Communication() {
                                                 </span>
                                             </td>
 
-                                            <td className="px-5 py-4">
+                                            <td className="px-4 py-3.5">
                                                 <p className="text-sm text-[var(--text-secondary)]">
                                                     {formatDate(
                                                         announcement.createdAt
@@ -972,7 +972,7 @@ function Communication() {
                             e.stopPropagation()
                         }
                     >
-                        <div className="flex items-start justify-between border-b border-[var(--border)] px-5 py-4">
+                        <div className="flex items-start justify-between border-b border-[var(--border)] px-4 py-3.5">
                             <div>
                                 <div className="mb-2 flex items-center gap-2">
                                     <Megaphone className="h-4 w-4 text-[var(--primary-light)]" />
@@ -982,7 +982,7 @@ function Communication() {
                                     </span>
                                 </div>
 
-                                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                                <h2 className="text-base font-semibold text-[var(--text-primary)]">
                                     {
                                         selectedAnnouncement.title
                                     }
@@ -1147,7 +1147,7 @@ function AnnouncementFormModal({
                     e.stopPropagation()
                 }
             >
-                <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+                <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3.5">
                     <div>
                         <h2 className="text-base font-semibold text-[var(--text-primary)]">
                             {title}
@@ -1170,7 +1170,7 @@ function AnnouncementFormModal({
 
                 <form
                     onSubmit={onSubmit}
-                    className="space-y-4 p-5"
+                    className="space-y-3.5 p-4"
                 >
                     <div>
                         <label className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]">
@@ -1187,7 +1187,7 @@ function AnnouncementFormModal({
                                 )
                             }
                             placeholder="Enter announcement title"
-                            className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
+                            className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
                         />
                     </div>
 
@@ -1206,7 +1206,7 @@ function AnnouncementFormModal({
                                 )
                             }
                             placeholder="Write your announcement..."
-                            className="w-full resize-none rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
+                            className="w-full resize-none rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--background)] px-3 py-2 text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--primary)]"
                         />
                     </div>
 
@@ -1284,7 +1284,7 @@ function AnnouncementFormModal({
                             type="button"
                             onClick={onClose}
                             disabled={loading}
-                            className="h-10 rounded-[var(--radius-md)] border border-[var(--border-light)] px-4 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--surface-hover)] disabled:opacity-50"
+                            className="h-9 rounded-[var(--radius-md)] border border-[var(--border-light)] px-3 text-[13px] font-medium text-[var(--text-secondary)] transition hover:bg-[var(--surface-hover)] disabled:opacity-50"
                         >
                             Cancel
                         </button>
@@ -1292,7 +1292,7 @@ function AnnouncementFormModal({
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex h-10 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--primary)] px-3 text-[13px] font-medium text-white transition hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Send className="h-4 w-4" />
 
@@ -1315,14 +1315,14 @@ function StatCard({
     iconBg,
 }) {
     return (
-        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-4">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-3.5">
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-xs text-[var(--text-muted)]">
                         {label}
                     </p>
 
-                    <p className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">
+                    <p className="mt-1 text-xl font-semibold text-[var(--text-primary)]">
                         {value}
                     </p>
                 </div>
