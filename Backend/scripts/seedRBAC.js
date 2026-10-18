@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 
@@ -61,6 +60,52 @@ const permissions = [
         action: "update",
         description: "Manage role permissions",
     },
+
+    // Emergency Alerts
+    {
+        name: "emergencyAlerts.read",
+        resource: "emergencyAlerts",
+        action: "read",
+        description: "View emergency alerts",
+    },
+    {
+        name: "emergencyAlerts.create",
+        resource: "emergencyAlerts",
+        action: "create",
+        description: "Create emergency alerts",
+    },
+    {
+        name: "emergencyAlerts.update",
+        resource: "emergencyAlerts",
+        action: "update",
+        description: "Resolve and reactivate emergency alerts",
+    },
+
+    // Incidents
+    {
+        name: "incidents.read",
+        resource: "incidents",
+        action: "read",
+        description: "View incidents",
+    },
+    {
+        name: "incidents.create",
+        resource: "incidents",
+        action: "create",
+        description: "Create incident reports",
+    },
+    {
+        name: "incidents.update",
+        resource: "incidents",
+        action: "update",
+        description: "Update incidents",
+    },
+    {
+        name: "incidents.delete",
+        resource: "incidents",
+        action: "delete",
+        description: "Delete incidents",
+    },
 ];
 
 const roles = [
@@ -72,10 +117,21 @@ const roles = [
             "users.read",
             "users.update",
             "users.delete",
+
             "roles.read",
             "roles.update",
+
             "permissions.read",
             "permissions.update",
+
+            "emergencyAlerts.read",
+            "emergencyAlerts.create",
+            "emergencyAlerts.update",
+
+            "incidents.read",
+            "incidents.create",
+            "incidents.update",
+            "incidents.delete",
         ],
     },
     {
@@ -83,6 +139,10 @@ const roles = [
         description: "Citizen access",
         permissions: [
             "users.read",
+            "emergencyAlerts.read",
+
+            "incidents.read",
+            "incidents.create",
         ],
     },
     {
@@ -90,6 +150,9 @@ const roles = [
         description: "Field officer access",
         permissions: [
             "users.read",
+
+            "incidents.read",
+            "incidents.update",
         ],
     },
     {
@@ -98,6 +161,9 @@ const roles = [
         permissions: [
             "users.read",
             "users.update",
+
+            "incidents.read",
+            "incidents.update",
         ],
     },
 ];
@@ -138,7 +204,7 @@ const seedRBAC = async () => {
             permissionMap.set(permission.name, permission._id);
         }
 
-        // Validate permission references before changing roles
+        // Validate permission references
         for (const roleData of roles) {
             for (const permissionName of roleData.permissions) {
                 if (!permissionMap.has(permissionName)) {
@@ -149,7 +215,7 @@ const seedRBAC = async () => {
             }
         }
 
-        // Create or update role permissions
+        // Update roles
         for (const roleData of roles) {
             const permissionIds = roleData.permissions.map(
                 (permissionName) => permissionMap.get(permissionName)

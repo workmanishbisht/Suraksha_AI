@@ -28,6 +28,10 @@ const citizenRoutes = require("./routes/citizenRoutes");
 const fieldOfficerRoutes = require("./routes/fieldOfficerRoutes");
 
 const emergencyResourceRoutes = require("./routes/emergencyResourceRoutes");
+const emergencyContactRoutes = require("./routes/emergencyContactRoutes");
+const emergencyAlertRoutes = require("./routes/emergencyAlertRoutes");
+
+const nearbyPlaceRoutes = require("./routes/nearbyPlaceRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 
 const profileRoutes = require("./routes/profileRoutes");
@@ -40,12 +44,6 @@ const permissionRoutes = require("./routes/permissionRoutes");
 
 const auditRoutes = require("./routes/auditRoutes");
 const systemSettingRoutes = require("./routes/systemSettingRoutes");
-
-/* =========================================
-   DATABASE
-========================================= */
-
-connectDB();
 
 /* =========================================
    MIDDLEWARE
@@ -102,10 +100,28 @@ app.use("/api/citizens", citizenRoutes);
 app.use("/api/field-officers", fieldOfficerRoutes);
 
 /* =========================================
-   EMERGENCY RESOURCES & REPORTS
+   EMERGENCY RESOURCES & CONTACTS
 ========================================= */
 
 app.use("/api/emergency-resources", emergencyResourceRoutes);
+app.use("/api/emergency-contacts", emergencyContactRoutes);
+
+/* =========================================
+   EMERGENCY ALERTS
+========================================= */
+
+app.use("/api/emergency-alerts", emergencyAlertRoutes);
+
+/* =========================================
+   NEARBY HELP
+========================================= */
+
+app.use("/api/nearby-places", nearbyPlaceRoutes);
+
+/* =========================================
+   REPORTS
+========================================= */
+
 app.use("/api/reports", reportRoutes);
 
 /* =========================================
@@ -119,8 +135,6 @@ app.use("/api/announcements", announcementRoutes);
    NOTIFICATIONS
 ========================================= */
 
-// IMPORTANT: Protect these routes with your existing
-// authentication middleware before using them.
 app.use("/api/notifications", notificationRoutes);
 
 /* =========================================
@@ -132,15 +146,10 @@ app.use("/api/roles", roleRoutes);
 app.use("/api/permissions", permissionRoutes);
 
 /* =========================================
-   AUDIT LOGS
+   AUDIT LOGS & SYSTEM SETTINGS
 ========================================= */
 
 app.use("/api/audit-logs", auditRoutes);
-
-/* =========================================
-   SYSTEM SETTINGS
-========================================= */
-
 app.use("/api/system-settings", systemSettingRoutes);
 
 /* =========================================
@@ -175,8 +184,21 @@ app.use((error, req, res, next) => {
    START SERVER
 ========================================= */
 
-app.listen(PORT, () => {
-    console.log(
-        `SurakshaAI Backend running on http://localhost:${PORT}`
-    );
-});
+const startServer = async () => {
+    try {
+        await connectDB();
+
+        app.listen(PORT, () => {
+            console.log(
+                `SurakshaAI Backend running on http://localhost:${PORT}`
+            );
+        });
+    } catch (error) {
+        console.error("Failed to start server:", error.message);
+        process.exit(1);
+    }
+};
+
+startServer();
+
+module.exports = app;
