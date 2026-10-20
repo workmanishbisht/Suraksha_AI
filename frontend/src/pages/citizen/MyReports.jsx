@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     AlertTriangle,
     CalendarDays,
@@ -13,68 +13,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const reportsData = [
-    {
-        id: "INC-10482",
-        title: "Road Accident",
-        type: "Accident",
-        location: "Rajpur Road, Dehradun",
-        date: "20 Sep 2026",
-        time: "09:42 AM",
-        severity: "High",
-        status: "Under Review",
-        description:
-            "Vehicle collision reported near the main road intersection.",
-    },
-    {
-        id: "INC-10476",
-        title: "Heavy Waterlogging",
-        type: "Flood",
-        location: "Clock Tower, Dehradun",
-        date: "18 Sep 2026",
-        time: "06:15 PM",
-        severity: "Medium",
-        status: "Resolved",
-        description:
-            "Heavy waterlogging affecting traffic movement in the area.",
-    },
-    {
-        id: "INC-10451",
-        title: "Street Fire",
-        type: "Fire",
-        location: "Patel Nagar, Dehradun",
-        date: "15 Sep 2026",
-        time: "02:28 PM",
-        severity: "Critical",
-        status: "Resolved",
-        description:
-            "Fire incident reported near a residential building.",
-    },
-    {
-        id: "INC-10432",
-        title: "Blocked Road",
-        type: "Other",
-        location: "Sahastradhara Road, Dehradun",
-        date: "12 Sep 2026",
-        time: "11:20 AM",
-        severity: "Low",
-        status: "Under Review",
-        description:
-            "Road access partially blocked due to fallen debris.",
-    },
-    {
-        id: "INC-10398",
-        title: "Medical Emergency",
-        type: "Medical",
-        location: "Prem Nagar, Dehradun",
-        date: "09 Sep 2026",
-        time: "08:35 PM",
-        severity: "High",
-        status: "Resolved",
-        description:
-            "Medical emergency reported near the local market.",
-    },
-];
+const API_BASE_URL = "http://localhost:5000/api";
 
 const statusConfig = {
     "Under Review": {
@@ -89,6 +28,10 @@ const statusConfig = {
         className: "bg-blue-500/10 text-blue-400 border-blue-500/20",
         icon: Clock3,
     },
+    Rejected: {
+        className: "bg-red-500/10 text-red-400 border-red-500/20",
+        icon: AlertTriangle,
+    },
 };
 
 const severityConfig = {
@@ -101,12 +44,105 @@ const severityConfig = {
 function MyReports() {
     const navigate = useNavigate();
 
+    const [reportsData, setReportsData] = useState([]);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedReport, setSelectedReport] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     const reportsPerPage = 4;
+
+    const formatLabel = (value = "") =>
+        String(value)
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+    const formatDate = (value) => {
+        if (!value) return "—";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "—";
+        return date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
+    const formatTime = (value) => {
+        if (!value) return "—";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "—";
+        return date.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
+    const normalizeReport = (report) => {
+        const location = report.location || {};
+        const statusMap = {
+            reported: "Pending",
+            investigating: "Under Review",
+            responding: "Under Review",
+            resolved: "Resolved",
+            rejected: "Rejected",
+        };
+        const createdAt = report.createdAt;
+        const locationLabel = [location.address, location.city, location.state]
+            .filter(Boolean)
+            .join(", ");
+
+        return {
+            ...report,
+            _id: report._id,
+            id: report.displayId || `INC-${String(report._id || "").slice(-6).toUpperCase()}`,
+            title: report.title || "Untitled Report",
+            type: formatLabel(report.type || "other"),
+            location: locationLabel || "Location not available",
+            date: formatDate(createdAt),
+            time: formatTime(createdAt),
+            severity: formatLabel(report.severity || "medium"),
+            status: statusMap[report.status] || "Pending",
+            description: report.description || "No description available.",
+        };
+    };
+
+    const fetchReports = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            // The backend must return only the authenticated citizen's reports.
+            const response = await fetch(`${API_BASE_URL}/incidents`, {
+                method: "GET",
+                credentials: "include",
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.message || "Failed to fetch your reports.");
+            }
+
+            const incidents = Array.isArray(data?.incidents) ? data.incidents : [];
+            setReportsData(incidents.map(normalizeReport));
+        } catch (fetchError) {
+            console.error("Fetch My Reports Error:", fetchError);
+            setError(fetchError.message || "Failed to load your reports.");
+            setReportsData([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReports();
+    }, []);
+
+    const totalReports = reportsData.length;
+    const reviewReports = reportsData.filter((report) => report.status === "Under Review").length;
+    const resolvedReports = reportsData.filter((report) => report.status === "Resolved").length;
 
     const filteredReports = useMemo(() => {
         return reportsData.filter((report) => {
@@ -124,7 +160,7 @@ function MyReports() {
 
             return matchesSearch && matchesStatus;
         });
-    }, [search, statusFilter]);
+  }, [reportsData, search, statusFilter]);
 
     const totalPages = Math.max(
         1,
@@ -192,7 +228,7 @@ function MyReports() {
                     </div>
 
                     <p className="mt-3 text-2xl font-semibold text-white">
-                        12
+                        {totalReports}
                     </p>
                 </div>
 
@@ -209,7 +245,7 @@ function MyReports() {
                     </div>
 
                     <p className="mt-3 text-2xl font-semibold text-white">
-                        03
+                        {reviewReports}
                     </p>
                 </div>
 
@@ -226,7 +262,7 @@ function MyReports() {
                     </div>
 
                     <p className="mt-3 text-2xl font-semibold text-white">
-                        09
+                        {resolvedReports}
                     </p>
                 </div>
 
@@ -270,6 +306,13 @@ function MyReports() {
                     </div>
                 </div>
 
+                {error && (
+                    <div className="border-b border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+                        {error}
+                        <button type="button" onClick={fetchReports} className="ml-3 underline underline-offset-2">Retry</button>
+                    </div>
+                )}
+
                 {/* Desktop Table */}
                 <div className="hidden overflow-x-auto md:block">
                     <table className="w-full min-w-[850px]">
@@ -302,7 +345,9 @@ function MyReports() {
                         </thead>
 
                         <tbody>
-                            {visibleReports.map((report) => {
+                            {loading ? (
+                                <tr><td colSpan={6} className="px-5 py-12 text-center text-sm text-slate-500">Loading your reports...</td></tr>
+                            ) : visibleReports.map((report) => {
                                 const status =
                                     statusConfig[report.status] ||
                                     statusConfig.Pending;
@@ -395,7 +440,9 @@ function MyReports() {
 
                 {/* Mobile Cards */}
                 <div className="divide-y divide-[var(--border)] md:hidden">
-                    {visibleReports.map((report) => {
+                    {loading ? (
+                        <div className="p-8 text-center text-sm text-slate-500">Loading your reports...</div>
+                    ) : visibleReports.map((report) => {
                         const status =
                             statusConfig[report.status] ||
                             statusConfig.Pending;
@@ -472,7 +519,7 @@ function MyReports() {
                 </div>
 
                 {/* Empty State */}
-                {visibleReports.length === 0 && (
+                {!loading && !error && visibleReports.length === 0 && (
                     <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-[5px] bg-slate-800">
                             <FileText
@@ -492,7 +539,7 @@ function MyReports() {
                 )}
 
                 {/* Pagination */}
-                {visibleReports.length > 0 && (
+                {!loading && visibleReports.length > 0 && (
                     <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-3">
                         <p className="text-xs text-slate-600">
                             Showing{" "}
@@ -580,8 +627,7 @@ function MyReports() {
                         <div className="space-y-5 p-5">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span
-                                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${severityConfig[selectedReport.severity]
-                                        }`}
+                                    className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${severityConfig[selectedReport.severity] || severityConfig.Medium}`}
                                 >
                                     {selectedReport.severity}
                                 </span>

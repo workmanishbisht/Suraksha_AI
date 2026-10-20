@@ -9,6 +9,7 @@ const {
 } = require("../controllers/incidentController");
 
 const { protect } = require("../middleware/authMiddleware");
+const permissionMiddleware = require("../middleware/permissionMiddleware");
 
 const router = express.Router();
 
@@ -16,19 +17,44 @@ const router = express.Router();
    INCIDENT ROUTES
 ========================================= */
 
-// Get all incidents
-router.get("/", protect, getIncidents);
+// Get incidents accessible to the current user
+router.get(
+    "/",
+    protect,
+    permissionMiddleware("incidents.read"),
+    getIncidents
+);
 
-// Get single incident
-router.get("/:id", protect, getIncidentById);
+// Get a single incident
+router.get(
+    "/:id",
+    protect,
+    permissionMiddleware("incidents.read"),
+    getIncidentById
+);
 
-// Create incident
-router.post("/", protect, createIncident);
+// Create an incident or citizen report
+router.post(
+    "/",
+    protect,
+    permissionMiddleware("incidents.create"),
+    createIncident
+);
 
-// Update incident
-router.put("/:id", protect, updateIncident);
+// Update an incident
+router.put(
+    "/:id",
+    protect,
+    permissionMiddleware("incidents.update"),
+    updateIncident
+);
 
-// Delete incident
-router.delete("/:id", protect, deleteIncident);
+// Delete an incident
+router.delete(
+    "/:id",
+    protect,
+    permissionMiddleware("incidents.delete"),
+    deleteIncident
+);
 
 module.exports = router;

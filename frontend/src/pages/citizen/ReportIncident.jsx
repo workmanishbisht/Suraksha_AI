@@ -79,23 +79,91 @@ function ReportIncident() {
         setDetecting(true);
 
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                // Save coordinates immediately; address lookup can take longer.
                 setFormData((prev) => ({
                     ...prev,
-                    latitude: position.coords.latitude.toFixed(6),
-                    longitude: position.coords.longitude.toFixed(6),
+                    latitude: latitude.toFixed(6),
+                    longitude: longitude.toFixed(6),
                 }));
 
-                setDetecting(false);
-                toast.success("Location coordinates detected.");
+                try {
+                    // Reverse geocoding converts GPS coordinates into readable address fields.
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}&zoom=18&addressdetails=1`,
+                        { headers: { Accept: "application/json" } }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error("Address lookup failed.");
+                    }
+
+                    const result = await response.json();
+                    const parts = result.address || {};
+                    const city =
+                        parts.city ||
+                        parts.town ||
+                        parts.village ||
+                        parts.municipality ||
+                        parts.city_district ||
+                        parts.county ||
+                        parts.state_district ||
+                        "";
+                    const street = [parts.house_number, parts.road || parts.pedestrian || parts.footway]
+                        .filter(Boolean)
+                        .join(" ");
+                    const landmark =
+                        parts.neighbourhood ||
+                        parts.suburb ||
+                        parts.quarter ||
+                        parts.hamlet ||
+                        parts.residential ||
+                        "";
+                    const address = [street, landmark]
+                        .filter((part, index, array) => part && array.indexOf(part) === index)
+                        .join(", ") ||
+                        result.name ||
+                        result.display_name ||
+                        "";
+
+                    setFormData((prev) => ({
+                        ...prev,
+                        latitude: latitude.toFixed(6),
+                        longitude: longitude.toFixed(6),
+                        address: address || prev.address,
+                        city: city || prev.city,
+                        state: parts.state || prev.state,
+                        country: parts.country || prev.country || "India",
+                    }));
+
+                    if (address || city || parts.state) {
+                        toast.success("Location and address details filled automatically.");
+                    } else {
+                        toast.warning("Coordinates detected, but address details were unavailable. Please fill them manually.");
+                    }
+                } catch (error) {
+                    console.error("Reverse geocoding error:", error);
+                    toast.warning("Coordinates detected, but address lookup failed. Please enter address and city manually.");
+                } finally {
+                    setDetecting(false);
+                }
             },
-            () => {
+            (error) => {
                 setDetecting(false);
-                toast.error("Unable to detect your location.");
+                const message =
+                    error.code === 1
+                        ? "Location permission denied. Please allow location access in your browser."
+                        : error.code === 2
+                            ? "Your current location is unavailable. Try again or enter it manually."
+                            : "Location detection timed out. Please try again.";
+                toast.error(message);
             },
             {
                 enableHighAccuracy: true,
-                timeout: 10000,
+                timeout: 15000,
                 maximumAge: 0,
             }
         );

@@ -353,7 +353,9 @@ function Incidents() {
                 type: formatType(incident.type),
                 severity: formatSeverity(incident.severity),
                 status: formatStatus(incident.status),
-                location: getLocation(incident),
+                // Keep the original location object intact for the edit form.
+                // Use locationText only for table/search/details display.
+                locationText: getLocation(incident),
                 people: Number(incident.peopleAffected) || 0,
                 time: getTimeAgo(incident.createdAt),
             };
@@ -371,7 +373,7 @@ function Incidents() {
                 String(incident.id || "")
                     .toLowerCase()
                     .includes(query) ||
-                String(incident.location || "")
+                String(incident.locationText || "")
                     .toLowerCase()
                     .includes(query) ||
                 String(incident.type || "")
@@ -1156,7 +1158,7 @@ function Incidents() {
                                     {/* LOCATION */}
                                     <div
                                         className="flex min-w-0 items-center gap-2"
-                                        title={incident.location}
+                                        title={incident.locationText}
                                     >
                                         <MapPin
                                             size={14}
@@ -1164,7 +1166,7 @@ function Incidents() {
                                         />
 
                                         <span className="min-w-0 truncate text-[10px] text-slate-400">
-                                            {incident.location}
+                                            {incident.locationText}
                                         </span>
                                     </div>
 
@@ -1437,7 +1439,7 @@ function Incidents() {
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="rounded-[5px] border border-[#173149] bg-[#071827] p-3">
                                     <p className="text-[9px] text-slate-600">Location</p>
-                                    <p className="mt-1 text-[10px] text-slate-300">{selectedIncident.location || "Location unavailable"}</p>
+                                    <p className="mt-1 text-[10px] text-slate-300">{selectedIncident.locationText || getLocation(selectedIncident)}</p>
                                 </div>
                                 <div className="rounded-[5px] border border-[#173149] bg-[#071827] p-3">
                                     <p className="text-[9px] text-slate-600">People Affected</p>
