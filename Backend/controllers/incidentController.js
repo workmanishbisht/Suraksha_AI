@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Incident = require("../models/Incident");
+const Notification = require("../models/Notification");
 
 const getUserId = (req) => req.user?._id || req.user?.id;
 
@@ -7,7 +8,6 @@ const getUserRole = (req) =>
     String(req.user?.role || "").toLowerCase();
 
 const isAdmin = (req) => getUserRole(req) === "admin";
-
 const isCitizen = (req) => getUserRole(req) === "citizen";
 
 const isFieldOfficer = (req) =>
@@ -23,12 +23,10 @@ const populateIncident = (query) =>
         .populate("reportedBy", "name username email role")
         .populate("assignedOfficer", "name username email role");
 
-/*
- * GET ALL INCIDENTS
- * Admin: all incidents
- * Citizen: own reports only
- * Officers: assigned incidents only
- */
+// GET ALL INCIDENTS
+// Admin: all incidents
+// Citizen: own reports only
+// Officers: assigned incidents only
 const getIncidents = async (req, res) => {
     try {
         const userId = getUserId(req);
@@ -44,7 +42,10 @@ const getIncidents = async (req, res) => {
 
         if (isCitizen(req)) {
             filter = { reportedBy: userId };
-        } else if (isFieldOfficer(req) || isDepartmentOfficer(req)) {
+        } else if (
+            isFieldOfficer(req) ||
+            isDepartmentOfficer(req)
+        ) {
             filter = { assignedOfficer: userId };
         } else if (!isAdmin(req)) {
             return res.status(403).json({
@@ -72,9 +73,7 @@ const getIncidents = async (req, res) => {
     }
 };
 
-/*
- * GET SINGLE INCIDENT
- */
+// GET SINGLE INCIDENT
 const getIncidentById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -134,10 +133,8 @@ const getIncidentById = async (req, res) => {
     }
 };
 
-/*
- * CREATE INCIDENT
- * Ownership and source are assigned by the server.
- */
+// CREATE INCIDENT
+// Ownership and source are assigned by the server.
 const createIncident = async (req, res) => {
     try {
         const userId = getUserId(req);
@@ -151,9 +148,12 @@ const createIncident = async (req, res) => {
         }
 
         if (
-            !["admin", "citizen", "field_officer", "department_officer"].includes(
-                role
-            )
+            ![
+                "admin",
+                "citizen",
+                "field_officer",
+                "department_officer",
+            ].includes(role)
         ) {
             return res.status(403).json({
                 success: false,
@@ -169,7 +169,6 @@ const createIncident = async (req, res) => {
             location,
             peopleAffected,
             images,
-            contactNumber,
         } = req.body;
 
         if (
@@ -223,10 +222,14 @@ const createIncident = async (req, res) => {
         }
 
         if (
-            (normalizedLocation.latitude !== undefined &&
-                !Number.isFinite(normalizedLocation.latitude)) ||
-            (normalizedLocation.longitude !== undefined &&
-                !Number.isFinite(normalizedLocation.longitude))
+            (
+                normalizedLocation.latitude !== undefined &&
+                !Number.isFinite(normalizedLocation.latitude)
+            ) ||
+            (
+                normalizedLocation.longitude !== undefined &&
+                !Number.isFinite(normalizedLocation.longitude)
+            )
         ) {
             return res.status(400).json({
                 success: false,
@@ -251,9 +254,7 @@ const createIncident = async (req, res) => {
         }
 
         const normalizedPeopleAffected =
-            peopleAffected === undefined
-                ? 0
-                : Number(peopleAffected);
+            peopleAffected === undefined ? 0 : Number(peopleAffected);
 
         if (
             !Number.isFinite(normalizedPeopleAffected) ||
@@ -272,7 +273,7 @@ const createIncident = async (req, res) => {
             });
         }
 
-        // Citizens cannot choose the initial status or assign officers.
+        // Citizens cannot choose the initial status.
         const initialStatus = isCitizen(req)
             ? "reported"
             : req.body.status || "reported";
@@ -342,12 +343,10 @@ const createIncident = async (req, res) => {
     }
 };
 
-/*
- * UPDATE INCIDENT
- * Admin: any incident
- * Officers: assigned incidents only
- * Citizen: cannot update incidents through this endpoint
- */
+// UPDATE INCIDENT
+// Admin: any incident
+// Officers: assigned incidents only
+// Citizen: cannot update incidents through this endpoint
 const updateIncident = async (req, res) => {
     try {
         const { id } = req.params;
@@ -368,6 +367,9 @@ const updateIncident = async (req, res) => {
                 message: "Incident not found",
             });
         }
+
+        // Store the original status before applying changes.
+        const previousStatus = incident.status;
 
         const isAssigned =
             incident.assignedOfficer &&
@@ -498,10 +500,14 @@ const updateIncident = async (req, res) => {
             }
 
             if (
-                (nextLocation.latitude !== undefined &&
-                    !Number.isFinite(nextLocation.latitude)) ||
-                (nextLocation.longitude !== undefined &&
-                    !Number.isFinite(nextLocation.longitude))
+                (
+                    nextLocation.latitude !== undefined &&
+                    !Number.isFinite(nextLocation.latitude)
+                ) ||
+                (
+                    nextLocation.longitude !== undefined &&
+                    !Number.isFinite(nextLocation.longitude)
+                )
             ) {
                 return res.status(400).json({
                     success: false,
@@ -555,7 +561,31 @@ const updateIncident = async (req, res) => {
             }
         }
 
+        // Save incident first.
         await incident.save();
+
+        // Create notification only if status actually changed.
+        if (
+            status !== undefined &&
+            status !== previousStatus &&
+            incident.reportedBy
+        ) {
+            try {
+                await Notification.create({
+                    recipient: incident.reportedBy,
+                    title: "Incident Status Updated",
+                    message: `Your report "${incident.title}" status changed from "${previousStatus}" to "${status}".`,
+                    type: "incident",
+                    link: "/citizen/my-reports",
+                });
+            } catch (notificationError) {
+                // Do not fail the incident update if notification creation fails.
+                console.error(
+                    "Create Incident Notification Error:",
+                    notificationError
+                );
+            }
+        }
 
         const updatedIncident = await populateIncident(
             Incident.findById(incident._id)
@@ -584,13 +614,10 @@ const updateIncident = async (req, res) => {
 };
 
 
-/*
- * DELETE INCIDENT
- * Admin only
- */
+// DELETE INCIDENT
+// Admin only
 const deleteIncident = async (req, res) => {
     try {
-        // Only Admin can delete incidents
         if (!isAdmin(req)) {
             return res.status(403).json({
                 success: false,

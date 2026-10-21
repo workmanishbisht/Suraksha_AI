@@ -43,6 +43,7 @@ import MyReports from "../pages/citizen/MyReports";
 import Alerts from "../pages/citizen/Alerts";
 import NearbyHelp from "../pages/citizen/NearbyHelp";
 import EmergencyContacts from "../pages/citizen/EmergencyContacts";
+import Myprofile from "../pages/citizen/Myprofile";
 
 /* =========================================
    LAYOUT & AUTHENTICATION
@@ -216,6 +217,13 @@ function AppRoutes() {
                         <Route
                             path="/citizen/emergency-contacts"
                             element={<EmergencyContacts />}
+                        />
+
+                        {/* Citizen Profile */}
+
+                        <Route
+                            path="/citizen/profile"
+                            element={<Myprofile />}
                         />
                     </Route>
                 </Route>
