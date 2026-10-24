@@ -1,17 +1,32 @@
 
 const express = require("express");
 
-const { getAuditLogs } = require("../controllers/auditController");
+const {
+    getAuditLogs,
+    getMyRecentActivity,
+} = require("../controllers/auditController");
+
 const { protect } = require("../middleware/authMiddleware");
 const permissionMiddleware = require("../middleware/permissionMiddleware");
 
 const router = express.Router();
 
 /* =========================================
-   AUDIT LOG ROUTES
+   MY RECENT ACTIVITY
+   Authenticated user: own activity only
 ========================================= */
 
-// Get audit logs - protected by RBAC
+router.get(
+    "/my-activity",
+    protect,
+    getMyRecentActivity
+);
+
+/* =========================================
+   AUDIT LOG ROUTES
+   Protected by RBAC
+========================================= */
+
 router.get(
     "/",
     protect,

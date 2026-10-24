@@ -22,6 +22,9 @@ import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/images/suraksha-logo.png";
 import loginBg from "../../assets/images/login-bg.webp";
 
+// Set VITE_API_URL in .env (for example: http://localhost:5000/api).
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+
 function Login() {
     const navigate = useNavigate();
 
@@ -191,7 +194,9 @@ function Login() {
             return;
         }
 
-        if (!/^\d{6}$/.test(otp)) {
+        const normalizedOtp = otp.trim();
+
+        if (!/^\d{6}$/.test(normalizedOtp)) {
             setOtpError(
                 "Verification code must be 6 digits."
             );
@@ -211,7 +216,7 @@ function Login() {
             setLoading(true);
 
             const response = await fetch(
-                "http://localhost:5000/api/auth/verify-2fa",
+                `${API_BASE_URL}/auth/verify-2fa`,
                 {
                     method: "POST",
                     credentials: "include",
@@ -221,7 +226,7 @@ function Login() {
                     },
                     body: JSON.stringify({
                         challengeToken,
-                        token: otp,
+                        token: normalizedOtp,
                     }),
                 }
             );

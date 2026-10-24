@@ -7,6 +7,20 @@ const User = require("../models/User");
 const TwoFactor = require("../models/TwoFactor");
 
 /* =========================================
+   HELPER: NORMALIZE OTP
+========================================= */
+
+const normalizeOtp = (value) => {
+    if (typeof value !== "string" && typeof value !== "number") {
+        return "";
+    }
+
+    return String(value).trim();
+};
+
+const isValidOtpFormat = (value) => /^\d{6}$/.test(value);
+
+/* =========================================
    REGISTER USER
 ========================================= */
 
@@ -199,7 +213,7 @@ const loginUser = async (req, res) => {
             });
         }
 
-        // Preserve the existing two-factor authentication flow.
+        // Check whether 2FA is enabled for this user.
         const twoFactor = await TwoFactor.findOne({
             user: user._id,
             enabled: true,
@@ -210,6 +224,7 @@ const loginUser = async (req, res) => {
                 throw new Error("JWT_SECRET is missing from environment");
             }
 
+            // Short-lived token used only for the 2FA login challenge.
             const challengeToken = jwt.sign(
                 {
                     id: user._id,
@@ -235,6 +250,7 @@ const loginUser = async (req, res) => {
             });
         }
 
+        // Normal login when 2FA is not enabled.
         const token = createLoginToken(user);
         setLoginCookie(res, token);
 
@@ -267,16 +283,23 @@ const loginUser = async (req, res) => {
 
 const verifyTwoFactorLogin = async (req, res) => {
     try {
-        const { challengeToken, token } = req.body;
+        const { challengeToken } = req.body || {};
+        const token = normalizeOtp(req.body?.token);
 
-        if (!challengeToken || !token) {
+        // Validate the challenge and OTP.
+        if (
+            typeof challengeToken !== "string" ||
+            !challengeToken.trim() ||
+            !token
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "2FA challenge and verification code are required",
             });
         }
 
-        if (!/^\d{6}$/.test(String(token))) {
+        // Keep OTP as a string so leading zeroes are preserved.
+        if (!isValidOtpFormat(token)) {
             return res.status(400).json({
                 success: false,
                 message: "Enter a valid 6-digit verification code",
@@ -287,6 +310,7 @@ const verifyTwoFactorLogin = async (req, res) => {
             throw new Error("JWT_SECRET is missing from environment");
         }
 
+        // Verify the temporary login challenge.
         let decoded;
 
         try {
@@ -324,22 +348,30 @@ const verifyTwoFactorLogin = async (req, res) => {
             });
         }
 
+        // Fetch the enabled 2FA record for this exact user.
         const twoFactor = await TwoFactor.findOne({
             user: user._id,
             enabled: true,
         });
 
-        if (!twoFactor) {
+        if (!twoFactor || !twoFactor.secret) {
             return res.status(400).json({
                 success: false,
-                message: "Two-factor authentication is not enabled.",
+                message: "Two-factor authentication is not enabled or is not configured correctly.",
             });
         }
 
+        /*
+         * IMPORTANT:
+         * The secret stored in MongoDB must match the secret enrolled
+         * in the user's authenticator app.
+         *
+         * Never log the secret or submitted OTP.
+         */
         const verified = speakeasy.totp.verify({
             secret: twoFactor.secret,
             encoding: "base32",
-            token: String(token),
+            token,
             step: 30,
             digits: 6,
             algorithm: "sha1",
@@ -349,10 +381,11 @@ const verifyTwoFactorLogin = async (req, res) => {
         if (!verified) {
             return res.status(401).json({
                 success: false,
-                message: "Invalid verification code.",
+                message: "Invalid verification code. Check your authenticator app and device time.",
             });
         }
 
+        // OTP verified: create the normal authenticated session.
         const loginToken = createLoginToken(user);
         setLoginCookie(res, loginToken);
 

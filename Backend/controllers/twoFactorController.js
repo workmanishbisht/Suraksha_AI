@@ -5,23 +5,69 @@ const TwoFactor = require("../models/TwoFactor");
 const User = require("../models/User");
 
 /* =========================================
+   HELPERS
+========================================= */
+
+const normalizeOtp = (value) => {
+    if (typeof value !== "string" && typeof value !== "number") {
+        return "";
+    }
+
+    return String(value).trim();
+};
+
+const isValidOtp = (value) => {
+    return /^\d{6}$/.test(normalizeOtp(value));
+};
+
+const verifyOtp = (secret, value, window = 1) => {
+    const token = normalizeOtp(value);
+
+    if (!secret || !isValidOtp(token)) {
+        return false;
+    }
+
+    return speakeasy.totp.verify({
+        secret,
+        encoding: "base32",
+        token,
+        step: 30,
+        digits: 6,
+        algorithm: "sha1",
+        window,
+    });
+};
+
+/* =========================================
    GET 2FA STATUS
 ========================================= */
 
 const getTwoFactorStatus = async (req, res) => {
     try {
-        const record = await TwoFactor.findOne({
-            user: req.user._id,
-        }).lean();
+        const userId = req.user?._id;
 
-        res.status(200).json({
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required.",
+            });
+        }
+
+        const record = await TwoFactor.findOne({
+            user: userId,
+        })
+            .select("enabled verifiedAt")
+            .lean();
+
+        return res.status(200).json({
             success: true,
             enabled: Boolean(record?.enabled),
+            verifiedAt: record?.verifiedAt || null,
         });
     } catch (error) {
-        console.error("Get 2FA Status Error:", error);
+        console.error("Get 2FA Status Error:", error.message);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Failed to fetch 2FA status.",
         });
@@ -34,9 +80,16 @@ const getTwoFactorStatus = async (req, res) => {
 
 const setupTwoFactor = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select(
-            "name email"
-        );
+        const userId = req.user?._id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required.",
+            });
+        }
+
+        const user = await User.findById(userId).select("name email");
 
         if (!user) {
             return res.status(404).json({
@@ -49,11 +102,11 @@ const setupTwoFactor = async (req, res) => {
             user: user._id,
         });
 
+        // Do not replace the secret when 2FA is already enabled.
         if (record?.enabled) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Two-factor authentication is already enabled.",
+                message: "Two-factor authentication is already enabled.",
             });
         }
 
@@ -63,13 +116,19 @@ const setupTwoFactor = async (req, res) => {
             length: 20,
         });
 
+        if (!secret?.base32 || !secret?.otpauth_url) {
+            throw new Error("Unable to generate 2FA secret.");
+        }
+
         if (!record) {
             record = new TwoFactor({
                 user: user._id,
                 secret: secret.base32,
                 enabled: false,
+                verifiedAt: null,
             });
         } else {
+            // Rotate only an incomplete, disabled setup.
             record.secret = secret.base32;
             record.enabled = false;
             record.verifiedAt = null;
@@ -81,16 +140,17 @@ const setupTwoFactor = async (req, res) => {
             secret.otpauth_url
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: "2FA setup initialized.",
+            message:
+                "2FA setup initialized. Scan this QR code and verify the current code.",
             qrCode,
             secret: secret.base32,
         });
     } catch (error) {
-        console.error("Setup 2FA Error:", error);
+        console.error("Setup 2FA Error:", error.message);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Failed to initialize 2FA setup.",
         });
@@ -103,65 +163,52 @@ const setupTwoFactor = async (req, res) => {
 
 const verifyTwoFactorSetup = async (req, res) => {
     try {
-        const { token } = req.body;
+        const userId = req.user?._id;
+        const token = normalizeOtp(req.body?.token);
 
-        if (!token || !/^\d{6}$/.test(String(token))) {
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required.",
+            });
+        }
+
+        if (!isValidOtp(token)) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Enter a valid 6-digit verification code.",
+                message: "Enter a valid 6-digit verification code.",
             });
         }
 
         const record = await TwoFactor.findOne({
-            user: req.user._id,
+            user: userId,
         });
 
-        if (!record) {
+        if (!record || !record.secret) {
             return res.status(404).json({
                 success: false,
-                message: "2FA setup not initialized.",
+                message: "2FA setup not initialized. Start setup again.",
             });
         }
 
         if (record.enabled) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Two-factor authentication is already enabled.",
+                message: "Two-factor authentication is already enabled.",
             });
         }
 
-        const serverToken = speakeasy.totp({
-            secret: record.secret,
-            encoding: "base32",
-            step: 30,
-            digits: 6,
-            algorithm: "sha1",
-        });
-
-        console.log("=================================");
-        console.log("2FA DEBUG");
-        console.log("Server OTP:", serverToken);
-        console.log("User OTP:", String(token));
-        console.log("=================================");
-
-        const verified = speakeasy.totp.verify({
-            secret: record.secret,
-            encoding: "base32",
-            token: String(token),
-            step: 30,
-            digits: 6,
-            algorithm: "sha1",
-            window: 2,
-        });
-
-        console.log("2FA Verified:", verified);
+        const verified = verifyOtp(
+            record.secret,
+            token,
+            1
+        );
 
         if (!verified) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid verification code.",
+                message:
+                    "Invalid or expired verification code. Check automatic date and time on your phone and use the current code from the QR you just scanned.",
             });
         }
 
@@ -170,16 +217,17 @@ const verifyTwoFactorSetup = async (req, res) => {
 
         await record.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message:
                 "Two-factor authentication enabled successfully.",
             enabled: true,
+            verifiedAt: record.verifiedAt,
         });
     } catch (error) {
-        console.error("Verify 2FA Error:", error);
+        console.error("Verify 2FA Error:", error.message);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Failed to verify 2FA.",
         });
@@ -188,36 +236,70 @@ const verifyTwoFactorSetup = async (req, res) => {
 
 /* =========================================
    DISABLE 2FA
+   Requires current authenticator code
 ========================================= */
 
 const disableTwoFactor = async (req, res) => {
     try {
-        const record = await TwoFactor.findOne({
-            user: req.user._id,
-        });
+        const userId = req.user?._id;
+        const token = normalizeOtp(req.body?.token);
 
-        if (!record) {
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required.",
+            });
+        }
+
+        if (!isValidOtp(token)) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Two-factor authentication is not configured.",
+                    "Enter your current 6-digit authenticator code.",
+            });
+        }
+
+        const record = await TwoFactor.findOne({
+            user: userId,
+        });
+
+        if (!record || !record.enabled) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Two-factor authentication is not enabled.",
+            });
+        }
+
+        const verified = verifyOtp(
+            record.secret,
+            token,
+            1
+        );
+
+        if (!verified) {
+            return res.status(401).json({
+                success: false,
+                message:
+                    "Invalid or expired authenticator code.",
             });
         }
 
         await TwoFactor.deleteOne({
-            user: req.user._id,
+            _id: record._id,
+            user: userId,
         });
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message:
                 "Two-factor authentication disabled successfully.",
             enabled: false,
         });
     } catch (error) {
-        console.error("Disable 2FA Error:", error);
+        console.error("Disable 2FA Error:", error.message);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Failed to disable 2FA.",
         });

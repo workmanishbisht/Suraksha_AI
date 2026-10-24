@@ -1,9 +1,18 @@
 
 const AuditLog = require("../models/AuditLog");
 
+/* =========================================
+   GET ALL AUDIT LOGS
+   Admin / RBAC protected route
+========================================= */
+
 const getAuditLogs = async (req, res) => {
     try {
-        const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+        const page = Math.max(
+            1,
+            Number.parseInt(req.query.page, 10) || 1
+        );
+
         const limit = Math.min(
             100,
             Math.max(1, Number.parseInt(req.query.limit, 10) || 20)
@@ -20,23 +29,26 @@ const getAuditLogs = async (req, res) => {
 
         const filter = {};
 
-        if (action) {
-            filter.action = action;
+        // Action filter
+        if (typeof action === "string" && action.trim()) {
+            filter.action = action.trim();
         }
 
-        if (resource) {
-            filter.resource = resource;
+        // Resource filter
+        if (typeof resource === "string" && resource.trim()) {
+            filter.resource = resource.trim();
         }
 
+        // Status filter
         if (["success", "failure"].includes(status)) {
             filter.status = status;
         }
 
-        if (search.trim()) {
-            const safeSearch = search.trim().replace(
-                /[.*+?^${}()|[\]\\]/g,
-                "\\$&"
-            );
+        // Safe search: escape regex special characters
+        if (typeof search === "string" && search.trim()) {
+            const safeSearch = search
+                .trim()
+                .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
             const regex = new RegExp(safeSearch, "i");
 
@@ -51,6 +63,7 @@ const getAuditLogs = async (req, res) => {
             ];
         }
 
+        // Date filters
         if (from || to) {
             filter.createdAt = {};
 
@@ -77,7 +90,7 @@ const getAuditLogs = async (req, res) => {
                     });
                 }
 
-                // Include the full selected day for YYYY-MM-DD inputs.
+                // Include the entire selected day
                 if (/^\d{4}-\d{2}-\d{2}$/.test(to)) {
                     toDate.setHours(23, 59, 59, 999);
                 }
@@ -99,26 +112,27 @@ const getAuditLogs = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        const [logs, total, successful, failed] = await Promise.all([
-            AuditLog.find(filter)
-                .populate("actor", "name username email")
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean(),
+        const [logs, total, successful, failed] =
+            await Promise.all([
+                AuditLog.find(filter)
+                    .populate("actor", "name username email")
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean(),
 
-            AuditLog.countDocuments(filter),
+                AuditLog.countDocuments(filter),
 
-            AuditLog.countDocuments({
-                ...filter,
-                status: "success",
-            }),
+                AuditLog.countDocuments({
+                    ...filter,
+                    status: "success",
+                }),
 
-            AuditLog.countDocuments({
-                ...filter,
-                status: "failure",
-            }),
-        ]);
+                AuditLog.countDocuments({
+                    ...filter,
+                    status: "failure",
+                }),
+            ]);
 
         return res.status(200).json({
             success: true,
@@ -145,6 +159,45 @@ const getAuditLogs = async (req, res) => {
     }
 };
 
+/* =========================================
+   GET MY RECENT ACTIVITY
+   Logged-in user only
+========================================= */
+
+const getMyRecentActivity = async (req, res) => {
+    try {
+        const limit = Math.min(
+            50,
+            Math.max(1, Number.parseInt(req.query.limit, 10) || 10)
+        );
+
+        const logs = await AuditLog.find({
+            actor: req.user._id,
+        })
+            .select("action resource description status createdAt")
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        return res.status(200).json({
+            success: true,
+            activities: logs,
+        });
+    } catch (error) {
+        console.error("Get My Recent Activity Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch recent activity.",
+        });
+    }
+};
+
+/* =========================================
+   EXPORTS
+========================================= */
+
 module.exports = {
     getAuditLogs,
+    getMyRecentActivity,
 };

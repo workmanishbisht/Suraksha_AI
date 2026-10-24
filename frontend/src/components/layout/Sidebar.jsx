@@ -129,10 +129,13 @@ const menuByRole = {
             ],
         },
         {
-            title: "ACCOUNT",
+            title: "SUPPORT",
             items: [
-                { label: "Profile", icon: UserRound, path: "/citizen/profile" },
-                { label: "Settings", icon: Settings, path: "/citizen/settings" },
+                {
+                    label: "Help & Support",
+                    icon: LifeBuoy,
+                    path: "/citizen/help-support",
+                },
             ],
         },
     ],
@@ -392,8 +395,8 @@ function Sidebar() {
 
                         <span
                             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[5px] ${isAdministrationActive
-                                    ? "bg-cyan-400/10"
-                                    : "group-hover:bg-white/[0.035]"
+                                ? "bg-cyan-400/10"
+                                : "group-hover:bg-white/[0.035]"
                                 }`}
                         >
                             <Icon
@@ -415,8 +418,8 @@ function Sidebar() {
                             size={15}
                             strokeWidth={1.8}
                             className={`shrink-0 transition-transform duration-200 ${isOpen
-                                    ? "rotate-90 text-cyan-400"
-                                    : "text-slate-500"
+                                ? "rotate-90 text-cyan-400"
+                                : "text-slate-500"
                                 }`}
                         />
                     </button>

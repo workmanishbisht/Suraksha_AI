@@ -44,6 +44,7 @@ import Alerts from "../pages/citizen/Alerts";
 import NearbyHelp from "../pages/citizen/NearbyHelp";
 import EmergencyContacts from "../pages/citizen/EmergencyContacts";
 import Myprofile from "../pages/citizen/Myprofile";
+import Mysettings from "../pages/citizen/Mysettings";
 
 /* =========================================
    LAYOUT & AUTHENTICATION
@@ -60,14 +61,10 @@ function AppRoutes() {
     return (
         <BrowserRouter>
             <Routes>
-                {/* =====================================
-                    AUTH ROUTES
-                ===================================== */}
+                {/* AUTH ROUTES */}
 
                 <Route path="/" element={<Login />} />
-
                 <Route path="/login" element={<Login />} />
-
                 <Route path="/register" element={<Register />} />
 
                 <Route
@@ -137,8 +134,6 @@ function AppRoutes() {
                             element={<Users />}
                         />
 
-                        {/* Legacy Users URL redirect */}
-
                         <Route
                             path="/admin/users"
                             element={
@@ -149,21 +144,21 @@ function AppRoutes() {
                             }
                         />
 
-                        {/* Administration: Roles & Permissions */}
+                        {/* Roles & Permissions */}
 
                         <Route
                             path="/admin/administration/roles-permissions"
                             element={<RolesPermissions />}
                         />
 
-                        {/* Administration: Audit Logs */}
+                        {/* Audit Logs */}
 
                         <Route
                             path="/admin/audit-logs"
                             element={<AuditLogs />}
                         />
 
-                        {/* System Settings */}
+                        {/* Admin Settings */}
 
                         <Route
                             path="/admin/settings"
@@ -225,6 +220,13 @@ function AppRoutes() {
                             path="/citizen/profile"
                             element={<Myprofile />}
                         />
+
+                        {/* Citizen Settings */}
+
+                        <Route
+                            path="/citizen/settings"
+                            element={<Mysettings />}
+                        />
                     </Route>
                 </Route>
 
@@ -274,9 +276,7 @@ function AppRoutes() {
                     </Route>
                 </Route>
 
-                {/* =====================================
-                    UNKNOWN ROUTES
-                ===================================== */}
+                {/* UNKNOWN ROUTES */}
 
                 <Route
                     path="*"
